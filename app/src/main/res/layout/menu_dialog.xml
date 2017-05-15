@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android"
+       android:layout_width="match_parent"
+       android:layout_height="wrap_content"
+       android:orientation="vertical">
+
+    <TextView
+        style="@style/Title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="直播推流设置"/>
+
+    <TextView
+        style="@style/Label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="推流地址:"/>
+
+    <EditText
+        android:id="@+id/stream_url"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="推流地址(可不填)"
+        android:imeOptions="flagNoExtractUi"/>
+
+    <TextView
+        style="@style/Label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="清晰度(重新进入后生效):"/>
+
+    <RadioGroup
+        android:id="@+id/resolution"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/resolution_xhight"
+            style="@style/Resolution_Item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="超清"/>
+
+        <RadioButton
+            android:id="@+id/resolution_hight"
+            style="@style/Resolution_Item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="高清"/>
+
+        <RadioButton
+            android:id="@+id/resolution_standard"
+            style="@style/Resolution_Item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="标清"/>
+
+        <RadioButton
+            android:id="@+id/resolution_fluent"
+            style="@style/Resolution_Item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="流畅"/>
+    </RadioGroup>
+
+    <TextView
+        style="@style/Label"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:text="方向(重新进入后生效):"/>
+
+    <RadioGroup
+        android:id="@+id/orientation"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:orientation="horizontal">
+
+        <RadioButton
+            android:id="@+id/orientation_landscape"
+            style="@style/Resolution_Item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="横屏"/>
+
+        <RadioButton
+            android:id="@+id/orientation_portrait"
+            style="@style/Resolution_Item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="竖屏"/>
+
+        <RadioButton
+            android:id="@+id/orientation_auto"
+            style="@style/Resolution_Item"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="自动"/>
+    </RadioGroup>
+</merge>

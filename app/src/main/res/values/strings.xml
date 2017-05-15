@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">微谷直播号</string>
+    <string name="wxdl">微信授权登录</string>
+    <string name="liveroom_person_state">在线:</string>
+    <string name="login_authority">遵守《微谷小社区服务协议》</string>
+    <string name="live_time">直播时长</string>
+    <string name="live_person_amount">总观看人数</string>
+    <string name="live_over">直播已结束</string>
+
+    <!--CameraActivity.java-->
+    <string name="c_pushStream_start">开始直播...</string>
+    <string name="c_pushStream_stop">本次直播结束</string>
+    <string name="c_pushStream_connect">连接中..</string>
+    <string name="c_camera_permission">请开启摄像头.麦克风硬件使用权限</string>
+    <string name="c_streamUrl_error">您的流地址不对，请输入正确的地址！</string>
+    <string name="c_cameraSwitch_resolution">抱歉！当前分辨率下不支持切换摄像头！</string>
+    <string name="c_flashlightSwitch">抱歉！前置摄像头不支持开启闪光灯！</string>
+    <string name="c_backPressed">直播过程中不能返回,请先停止直播！</string>
+    <string name="c_member_pushStreamTime">您此次推流的时间已到，请重新进入开始推流！</string>
+    <string name="c_member_count_error">记次失败，请重新进入开始推流</string>
+    <string name="c_member_overdue">您的会员已过期，请重新充值会员！</string>
+    <string name="c_member_shortage">您的号外棒不足，请充值！</string>
+
+    <!--WebActivity.java-->
+    <string name="w_tip">已经是首页啦！</string>
+    <string name="w_shareTip">该页面不支持分享，请点击话题介绍进入分享!</string>
+    <string name="w_exit_app">再按一次退出应用</string>
+
+
+    <!--微信登录 -->
+    <string name="errcode_success">发送成功</string>
+    <string name="errcode_cancel">发送取消</string>
+    <string name="errcode_deny">发送被拒绝</string>
+    <string name="errcode_unknown">发送返回</string>
+    <string name="count_ok">记次成功</string>
+    <string name="count_error">记次失败</string>
+    <string name="illegal_operation">非法操作</string>
+    <string name="members_expired">会员过期</string>
+    <string name="insufficient">号外棒不足</string>
+
+
+    <string name="toggle_switch_flash_on">开启闪光灯</string>
+    <string name="toggle_switch_flash_off">关闭闪光灯</string>
+    <string name="app_camera">切换摄像头</string>
+    <string name="live_push">开始推流</string>
+    <string name="live_stop">结束推流</string>
+    <string name="toggle_switch_beauty_on">美颜开启</string>
+    <string name="toggle_switch_beauty_off">美颜关闭</string>
+
+    <string name="no_camera_permission">没有权限使用摄像头，请开启摄像头权限</string>
+    <string name="no_record_audio_permission">没有权限使用录音，请开启录音权限</string>
+
+    <string name="VIDEO_CAPTURE_FPS">视频采集帧率（实时帧率）:</string>
+    <string name="AUDIO_ENCODER_FPS">音频编码帧率（实时帧率）:</string>
+    <string name="VIDEO_ENCODER_FPS">视频编码帧率（实时帧率）:</string>
+    <string name="OUTPUT_BITRATE">输出码率（实时码率）:</string>
+    <string name="AV_OUTPUT_DIFF">当前输出流，audio pts与video pts的差值:</string>
+    <string name="AUDIO_OUTPUT_FPS">音频输出帧率（实时帧率）:</string>
+    <string name="VIDEO_OUTPUT_FPS">视频输出帧率（实时帧率）:</string>
+    <string name="STREAM_PUBLISH_TIME">推流发布耗时（推流开始到发布流成功耗时）:</string>
+    <string name="STREAM_SERVER_IP">推流服务器IP:</string>
+    <string name="VIDEO_DELAY_DURATION">视频延迟时长:</string>
+    <string name="AUDIO_DELAY_DURATION">音频延迟时长:</string>
+    <string name="VIDEO_CACHE_FRAME_CNT">缓冲队列视频帧数:</string>
+    <string name="AUDIO_CACHE_FRAME_CNT">缓冲队列音频帧数:</string>
+    <string name="VIDEO_CACHE_BYTE_SIZE">缓冲队列视频数据总数:</string>
+    <string name="AUDIO_CACHE_BYTE_SIZE">缓冲队列音频数据总数:</string>
+    <string name="VIDEO_FRAME_DISCARD_CNT">视频丢弃总帧数:</string>
+    <string name="AUDIO_FRAME_DISCARD_CNT">音频丢弃总帧数:</string>
+    <string name="CUR_VIDEO_BUEATY_DURATION">当前视频帧美颜耗时:</string>
+    <string name="CUR_VIDEO_ENCODER_DURATION">当前视频帧编码耗时:</string>
+    <string name="cur_video_encode_bitrate">当前视频编码码率:</string>
+
+    <string name="illegal_output_resolution">选择输出分辨率过大</string>
+
+    <string name="VIDEO_OUTPUT_FRAME_COUNT">获取视频流已发送帧数:</string>
+    <string name="VIDEO_DATA">视频流已发送数据量:</string>
+    <string name="VIDEO_BUFFER_COUNT">当前手机端缓存的视频帧总数:</string>
+    <string name="VIDEO_DROPPED_FRAMECOUNT">当前直播视频流丢帧总数:</string>
+    <string name="AUDIO_DATA">音频流已发送数据量:</string>
+    <string name="logo_90_40">水印设置(默认微谷官方水印,最优尺寸90*40)</string>
+
+</resources>

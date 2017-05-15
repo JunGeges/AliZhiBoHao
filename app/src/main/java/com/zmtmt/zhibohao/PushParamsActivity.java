@@ -1,0 +1,486 @@
+package com.zmtmt.zhibohao;
+
+import android.Manifest;
+import android.app.Activity;
+import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.net.Uri;
+import android.os.Build;
+import android.os.Bundle;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.ContextCompat;
+import android.support.v4.content.FileProvider;
+import android.view.Gravity;
+import android.view.LayoutInflater;
+import android.view.View;
+import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.PopupWindow;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.RelativeLayout;
+import android.widget.SeekBar;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.alibaba.livecloud.live.AlivcMediaFormat;
+import com.alibaba.livecloud.model.AlivcWatermark;
+import com.orhanobut.logger.Logger;
+import com.zmtmt.zhibohao.entity.Products;
+import com.zmtmt.zhibohao.entity.ShareInfo;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+
+import static com.duanqu.qupai.recorder.RecorderTask.TAG;
+
+public class PushParamsActivity extends Activity implements View.OnClickListener, RadioGroup.OnCheckedChangeListener {
+
+    private Button connectBT;
+    private RadioGroup resolutionCB;
+    private RadioButton resolution360button;
+    private RadioButton resolution480button;
+    private RadioButton resolution720button;
+    private RadioButton resolution540button;
+    private RadioGroup rotationGroup;
+    private RadioButton screenOrientation1;
+    private RadioButton screenOrientation2;
+
+    private ImageView pickDirectory;
+    private TextView mSeekBarlv;
+    private TextView zhenSeekBarlv;
+    private SeekBar sb_zlv;
+    private SeekBar sb_mlv;
+    private RelativeLayout mRelativeLayout;
+    private TextView tv_cancel;
+    private WindowManager.LayoutParams params;
+    private PopupWindow pop;
+
+    public static final int TAKE_PHOTO = 1;
+    public static final int CROP_PHOTO = 2;
+    public static final int GET_PHOTO = 3;
+    private Uri headImgUri;
+    private String eventUrl;//请求地址
+    private String openID;//直播用户openid
+    private String pushUrl;//推流地址
+    private int memberlevelId;//会员等级
+    private ArrayList<Products> productList;//商品集合
+    private ShareInfo mShareInfo;//分享信息
+    private String watermarkUrl = "assets://wartermark/wglogo.png";//默认微谷logo
+    private int site = 1;//默认水印位置上右
+    private int initBitrate = 1200;//初始化码率
+    private int bestBitrate = 1200;//最佳码率
+    private int maxBitrate = 1300;
+    int frameRate = 30;//帧率
+    private Uri mUriFile;
+    private Button btn_left_top, btn_left_bottom, btn_right_top, btn_right_bottom;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_pushparams);
+        initViews();
+        getExternalData();
+    }
+
+    private void initViews() {
+        btn_left_top = (Button) findViewById(R.id.btn_left_top);
+        btn_left_bottom = (Button) findViewById(R.id.btn_left_bottom);
+        btn_right_bottom = (Button) findViewById(R.id.btn_right_bottom);
+        btn_right_top = (Button) findViewById(R.id.btn_right_top);
+        btn_left_bottom.setOnClickListener(this);
+        btn_right_top.setOnClickListener(this);
+        btn_left_top.setOnClickListener(this);
+        btn_right_bottom.setOnClickListener(this);
+        connectBT = (Button) findViewById(R.id.connectBT);
+        connectBT.setOnClickListener(this);
+        resolutionCB = (RadioGroup) findViewById(R.id.resolution_group);
+        resolution360button = (RadioButton) findViewById(R.id.radio_smooth_definition);
+        resolution480button = (RadioButton) findViewById(R.id.radio_standard_definition);
+        resolution540button = (RadioButton) findViewById(R.id.radio_high_definition);
+        resolution720button = (RadioButton) findViewById(R.id.radio_super_definition);
+
+        rotationGroup = (RadioGroup) findViewById(R.id.rotation_group);
+        screenOrientation1 = (RadioButton) findViewById(R.id.screenOrientation1);
+        screenOrientation2 = (RadioButton) findViewById(R.id.screenOrientation2);
+        resolutionCB.setOnCheckedChangeListener(this);
+        rotationGroup.setOnCheckedChangeListener(this);
+
+        pickDirectory = (ImageView) findViewById(R.id.iv_pick_directory);
+        pickDirectory.setOnClickListener(this);
+
+        mSeekBarlv = (TextView) findViewById(R.id.tv_mlv);
+        mSeekBarlv.setText("(1200)");
+        zhenSeekBarlv = (TextView) findViewById(R.id.tv_zhenlv);
+        zhenSeekBarlv.setText("(30)");
+
+        sb_mlv = (SeekBar) findViewById(R.id.sb_mlv);
+        sb_mlv.setProgress(1200);
+
+        sb_zlv = (SeekBar) findViewById(R.id.sb_zlv);
+        sb_zlv.setProgress(30);
+
+        sb_mlv.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                mSeekBarlv.setText("(" +progress+ ")");
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                //获取最终的码率
+                int progress = seekBar.getProgress();
+                initBitrate = progress;
+            }
+        });
+        sb_zlv.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
+                zhenSeekBarlv.setText("(" + progress+ ")");
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                //获取最终的帧率
+                int progress = seekBar.getProgress();
+                frameRate = progress;
+            }
+        });
+
+        mRelativeLayout = (RelativeLayout) findViewById(R.id.rl_back);
+        mRelativeLayout.setOnClickListener(this);
+    }
+
+    private boolean isYaoYue;
+    public void getExternalData() {
+        Intent intent = getIntent();
+        pushUrl = intent.getStringExtra("pushurl");
+//        pushUrl="rtmp://appa-push.zipindao.tv/live/110";
+        eventUrl = intent.getStringExtra("eventurl");
+        openID = intent.getStringExtra("openid");
+        memberlevelId = Integer.parseInt(intent.getStringExtra("memberlevelid"));
+        Logger.t(TAG).d(eventUrl + "liveconsumeajax" + pushUrl);
+        productList = intent.getParcelableArrayListExtra("products_list");
+        mShareInfo = intent.getParcelableExtra("shareinfo");
+        isYaoYue=intent.getBooleanExtra("isYaoYue",false);
+        Logger.t(TAG).d(mShareInfo);
+    }
+
+    @Override
+    public void onCheckedChanged(RadioGroup group, int checkedId) {
+        int checkedRadioButtonId = group.getCheckedRadioButtonId();
+        switch (checkedRadioButtonId) {
+            case R.id.radio_smooth_definition:
+                //360p
+                mSeekBarlv.setText(600 + "");
+                sb_mlv.setProgress(600);
+                zhenSeekBarlv.setText("(25)");
+                sb_zlv.setProgress(25);
+                initBitrate = 600;
+                bestBitrate = 600;
+                maxBitrate = 800;
+                frameRate = 25;
+                resolution360button.setBackgroundResource(R.drawable.push_params_set_click_btn);
+                resolution480button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                resolution720button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                resolution540button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                break;
+            case R.id.radio_standard_definition:
+                //480p
+                mSeekBarlv.setText(800 + "");
+                sb_mlv.setProgress(800);
+                zhenSeekBarlv.setText("(25)");
+                sb_zlv.setProgress(25);
+                initBitrate = 800;
+                bestBitrate = 800;
+                maxBitrate = 1000;
+                frameRate = 25;
+                resolution360button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                resolution480button.setBackgroundResource(R.drawable.push_params_set_click_btn);
+                resolution720button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                resolution540button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                break;
+            case R.id.radio_super_definition:
+                //720p
+                mSeekBarlv.setText(1800 + "");
+                sb_mlv.setProgress(1800);
+                zhenSeekBarlv.setText("(30)");
+                sb_zlv.setProgress(30);
+                initBitrate = 1800;
+                bestBitrate = 1800;
+                maxBitrate = 2500;
+                frameRate = 30;
+                resolution360button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                resolution480button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                resolution720button.setBackgroundResource(R.drawable.push_params_set_click_btn);
+                resolution540button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                break;
+            case R.id.radio_high_definition:
+                //540p
+                mSeekBarlv.setText(1200 + "");
+                sb_mlv.setProgress(1200);
+                zhenSeekBarlv.setText("(30)");
+                sb_zlv.setProgress(30);
+                initBitrate = 1200;
+                bestBitrate = 1500;
+                frameRate = 30;
+                resolution360button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                resolution480button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                resolution720button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                resolution540button.setBackgroundResource(R.drawable.push_params_set_click_btn);
+                break;
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case R.id.connectBT:
+                int videoResolution = 0;
+                int cameraFrontFacing = AlivcMediaFormat.CAMERA_FACING_BACK;
+                boolean screenOrientation;
+                if (resolution360button.isChecked()) {
+                    videoResolution = AlivcMediaFormat.OUTPUT_RESOLUTION_360P;
+                } else if (resolution480button.isChecked()) {
+                    videoResolution = AlivcMediaFormat.OUTPUT_RESOLUTION_480P;
+                } else if (resolution720button.isChecked()) {
+                    videoResolution = AlivcMediaFormat.OUTPUT_RESOLUTION_720P;
+                } else if (resolution540button.isChecked()) {
+                    videoResolution = AlivcMediaFormat.OUTPUT_RESOLUTION_540P;
+                }
+                if (screenOrientation1.isChecked()) {
+                    screenOrientation = true;
+                } else {
+                    screenOrientation = false;
+                }
+
+                int dx = 14;
+                int dy = 14;
+                int minBitrate = 500;
+                LiveCameraActivity.RequestBuilder builder = new LiveCameraActivity.RequestBuilder()
+                        .bestBitrate(bestBitrate)
+                        .cameraFacing(cameraFrontFacing)
+                        .dx(dx)
+                        .dy(dy)
+                        .site(site)
+                        .rtmpUrl(pushUrl)
+                        .videoResolution(videoResolution)
+                        .portrait(screenOrientation)
+                        .watermarkUrl(watermarkUrl)
+                        .minBitrate(minBitrate)
+                        .maxBitrate(maxBitrate)
+                        .frameRate(frameRate)
+                        .initBitrate(initBitrate)
+                        .memberlevelId(memberlevelId)
+                        .eventUrl(eventUrl)
+                        .productList(productList)
+                        .shareInfo(mShareInfo)
+                        .openId(openID)
+                        .yaoYue(isYaoYue);
+                LiveCameraActivity.startActivity(v.getContext(), builder);
+                break;
+
+            case R.id.iv_pick_directory:
+                showPopWindow();
+                break;
+
+            case R.id.tv_cancel:
+                pop.dismiss();
+                break;
+
+            case R.id.tv_choose_photo:
+                if (ContextCompat.checkSelfPermission(PushParamsActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                    ActivityCompat.requestPermissions(PushParamsActivity.this, new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
+                } else {
+                    openAlbum();
+                }
+                break;
+
+            case R.id.tv_take_photo:
+                takePhotos();
+                break;
+
+            case R.id.rl_back:
+                finish();
+                break;
+
+            case R.id.btn_left_top:
+                btn_left_top.setBackgroundResource(R.drawable.push_params_set_click_btn);
+                btn_left_bottom.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                btn_right_top.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                btn_right_bottom.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                site = AlivcWatermark.SITE_TOP_LEFT;
+                break;
+
+            case R.id.btn_left_bottom:
+                btn_left_top.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                btn_left_bottom.setBackgroundResource(R.drawable.push_params_set_click_btn);
+                btn_right_top.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                btn_right_bottom.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                site = AlivcWatermark.SITE_BOTTOM_LEFT;
+                break;
+
+            case R.id.btn_right_top:
+                btn_left_top.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                btn_left_bottom.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                btn_right_top.setBackgroundResource(R.drawable.push_params_set_click_btn);
+                btn_right_bottom.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                site = AlivcWatermark.SITE_TOP_RIGHT;
+                break;
+
+            case R.id.btn_right_bottom:
+                btn_left_top.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                btn_left_bottom.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                btn_right_top.setBackgroundResource(R.drawable.push_params_set_normal_btn);
+                btn_right_bottom.setBackgroundResource(R.drawable.push_params_set_click_btn);
+                site = AlivcWatermark.SITE_BOTTOM_RIGHT;
+                break;
+        }
+    }
+
+    private void showPopWindow() {
+        //当分享窗口弹出的时候设置主窗口的背景为50%的透明度，窗口消失的时候恢复
+        params = PushParamsActivity.this.getWindow().getAttributes();
+        params.alpha = 0.5f;
+        PushParamsActivity.this.getWindow().setAttributes(params);
+        LayoutInflater layoutInflater = LayoutInflater.from(PushParamsActivity.this);
+        View pop_show_view = layoutInflater.inflate(R.layout.pop_pick_directory, null);
+        pop = new PopupWindow(pop_show_view, WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
+        pop.setFocusable(true);
+        pop.setBackgroundDrawable(new BitmapDrawable());
+        pop.setAnimationStyle(R.style.ShareAnimation);
+        pop.setOutsideTouchable(true);
+        View ll = layoutInflater.inflate(R.layout.activity_webview, null);
+        pop.showAtLocation(ll, Gravity.BOTTOM, 0, 0);
+        tv_cancel = (TextView) pop_show_view.findViewById(R.id.tv_cancel);
+        tv_cancel.setOnClickListener(PushParamsActivity.this);
+
+        TextView choose_photo = (TextView) pop_show_view.findViewById(R.id.tv_choose_photo);
+        choose_photo.setOnClickListener(this);
+        TextView take_photo = (TextView) pop_show_view.findViewById(R.id.tv_take_photo);
+        take_photo.setOnClickListener(this);
+
+
+        pop.setOnDismissListener(new PopupWindow.OnDismissListener() {
+            @Override
+            public void onDismiss() {
+                if (!pop.isShowing()) {
+                    params.alpha = 1.0f;
+                    PushParamsActivity.this.getWindow().setAttributes(params);
+                }
+            }
+        });
+    }
+
+    private void openAlbum() {
+        Intent intent = new Intent("android.intent.action.GET_CONTENT");
+        intent.setType("image/*");
+        startActivityForResult(intent, GET_PHOTO); // 打开相册
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
+        switch (requestCode) {
+            case 1:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    openAlbum();
+                } else {
+                    Toast.makeText(this, "你拒绝了权限", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            default:
+        }
+    }
+
+    private void takePhotos() {
+        // 创建File对象，用于存储拍照后的图片
+        File outputImage = new File(getExternalCacheDir(), "output_image.jpg");
+        try {
+            if (outputImage.exists()) {
+                outputImage.delete();
+            }
+            outputImage.createNewFile();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        if (Build.VERSION.SDK_INT < 24) {
+            headImgUri = Uri.fromFile(outputImage);
+        } else {
+            headImgUri = FileProvider.getUriForFile(PushParamsActivity.this, "com.example.cameraalbumtest.fileprovider", outputImage);
+        }
+        // 启动相机程序
+        Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, headImgUri);
+        startActivityForResult(intent, TAKE_PHOTO);
+    }
+
+    /**
+     * 裁剪
+     */
+    private void crop(Uri uri) {
+        // 裁剪图片意图
+        Intent intent = new Intent("com.android.camera.action.CROP");
+        intent.setDataAndType(uri, "image/*");
+        // 下面这个crop=true是设置在开启的Intent中设置显示的VIEW可裁剪
+        intent.putExtra("crop", "true");
+        intent.putExtra("scale", true);// 去黑边
+        // 裁剪框的比例，2：1
+        intent.putExtra("aspectX", 2);// 输出是X方向的比例
+        intent.putExtra("aspectY", 1);
+        // 裁剪后输出图片的尺寸大小,不能太大500程序崩溃
+        intent.putExtra("outputX", 100);
+        intent.putExtra("outputY", 50);
+        // 图片格式
+  /* intent.putExtra("outputFormat", "JPEG"); */
+        intent.putExtra("outputFormat", Bitmap.CompressFormat.JPEG.toString());
+        // intent.putExtra("noFaceDetection", true);// 取消人脸识别
+        intent.putExtra("return-data", true);// true:返回uri，false：不返回uri
+        // 同一个地址下 裁剪的图片覆盖拍照的图片
+        mUriFile = Uri.parse("file://" + "/" + Environment.getExternalStorageDirectory() + "/tmp.jpg");
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, mUriFile);
+        startActivityForResult(intent, CROP_PHOTO);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+            case GET_PHOTO:
+                if (resultCode == RESULT_OK) {
+                    crop(data.getData());
+                }
+                break;
+            case TAKE_PHOTO:
+                if (resultCode == RESULT_OK) {
+                    crop(headImgUri);
+                }
+                break;
+            case CROP_PHOTO:
+                if (resultCode == RESULT_OK) {
+                    Bitmap cropBitmap = data.getParcelableExtra("data");
+                    String path = mUriFile.getPath();
+                    watermarkUrl = path;
+                    pickDirectory.setImageBitmap(cropBitmap);
+                    pop.dismiss();
+                }
+                break;
+            default:
+                break;
+        }
+    }
+}

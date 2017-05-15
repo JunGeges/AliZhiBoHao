@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="alivc-live-record-v1.2.0">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/app/libs/alivc-live-record-v1.2.0.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>
