@@ -1,13 +1,16 @@
 package com.zmtmt.zhibohao;
 
 import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.app.Activity;
+import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
@@ -83,7 +86,7 @@ import static android.webkit.WebSettings.LOAD_NO_CACHE;
 public class WebActivity extends AppCompatActivity implements View.OnClickListener {
     private static final String TAG = "WebActivity";
     private static final String URL = "http://www.zipindao.tv/app/index.php?c=entry&m=wg_test&i=4&do=applogin";
-    private static final String INDEXURL="http://www.zipindao.tv/app/index.php?c=entry&m=wg_test&do=myroomlive&i=4";
+    private static final String INDEXURL = "http://www.zipindao.tv/app/index.php?c=entry&m=wg_test&do=myroomlive&i=4";
     private WebView mWebView;
     private ValueCallback<Uri> mUploadMessage;//回调图片选择，4.4以下
     private ValueCallback<Uri[]> mUploadCallbackAboveL;//回调图片选择，5.0以上
@@ -109,6 +112,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     private ArrayAdapter<String> adapter;
     private File file;
     private CustomDialog mCustomDialog;
+    private String mBase;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -367,61 +371,75 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     }
 
     class MyWebChromeClient extends WebChromeClient {
-        // For Android 3.0+
+        // For Android <3.0
         public void openFileChooser(ValueCallback<Uri> uploadMsg) {
-
             mUploadMessage = uploadMsg;
-            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-            i.addCategory(Intent.CATEGORY_OPENABLE);
-            i.setType("image/*");
-            WebActivity.this.startActivityForResult(Intent.createChooser(i, "选择上传文件"), FILECHOOSER_RESULTCODE);
+            openImageChooserActivity();
         }
 
-        // For Android 3.0+
+        // For Android >=3.0
         public void openFileChooser(ValueCallback uploadMsg, String acceptType) {
             mUploadMessage = uploadMsg;
-            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-            i.addCategory(Intent.CATEGORY_OPENABLE);
-            i.setType("*/*");
-            WebActivity.this.startActivityForResult(Intent.createChooser(i, "选择上传文件"), FILECHOOSER_RESULTCODE);
+            openImageChooserActivity();
         }
 
-        //For Android 4.1
+        //For Android >=4.1
         public void openFileChooser(ValueCallback<Uri> uploadMsg, String acceptType, String capture) {
             mUploadMessage = uploadMsg;
-            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-            i.addCategory(Intent.CATEGORY_OPENABLE);
-            i.setType("image/*");
-            WebActivity.this.startActivityForResult(Intent.createChooser(i, "选择上传文件"), WebActivity.FILECHOOSER_RESULTCODE);
+            openImageChooserActivity();
         }
 
-        // For Android 5.0+
+        // For Android >=5.0
         public boolean onShowFileChooser(WebView webView, ValueCallback<Uri[]> filePathCallback, WebChromeClient.FileChooserParams fileChooserParams) {
             mUploadCallbackAboveL = filePathCallback;
-            Intent i = new Intent(Intent.ACTION_GET_CONTENT);
-            i.addCategory(Intent.CATEGORY_OPENABLE);
-            i.setType("*/*");
-            startActivityForResult(Intent.createChooser(i, "选择上传文件"), FILECHOOSER_RESULTCODE);
+            openImageChooserActivity();
             return true;
         }
     }
 
+    private void openImageChooserActivity() {
+        Intent i = new Intent(Intent.ACTION_GET_CONTENT);
+        i.addCategory(Intent.CATEGORY_OPENABLE);
+        i.setType("image/*");
+        startActivityForResult(Intent.createChooser(i, "Image Chooser"), FILECHOOSER_RESULTCODE);
+    }
+
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
-        if (resultCode != Activity.RESULT_OK) {
+        if (requestCode == FILECHOOSER_RESULTCODE) {
+            if (null == mUploadMessage && null == mUploadCallbackAboveL) return;
+            Uri result = intent == null || resultCode != RESULT_OK ? null : intent.getData();
+            if (mUploadCallbackAboveL != null) {
+                onActivityResultAboveL(requestCode, resultCode, intent);
+            } else if (mUploadMessage != null) {
+                mUploadMessage.onReceiveValue(result);
+                mUploadMessage = null;
+            }
+        }
+    }
+
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    private void onActivityResultAboveL(int requestCode, int resultCode, Intent intent) {
+        if (requestCode != FILECHOOSER_RESULTCODE || mUploadCallbackAboveL == null)
             return;
-        }
-        switch (requestCode) {
-            case FILECHOOSER_RESULTCODE:
-                if (requestCode == FILECHOOSER_RESULTCODE) {
-                    if (null == mUploadMessage) return;
-                    Uri result = intent == null || resultCode != RESULT_OK ? null
-                            : intent.getData();
-                    mUploadMessage.onReceiveValue(result);
-                    mUploadMessage = null;
+        Uri[] results = null;
+        if (resultCode == Activity.RESULT_OK) {
+            if (intent != null) {
+                String dataString = intent.getDataString();
+                ClipData clipData = intent.getClipData();
+                if (clipData != null) {
+                    results = new Uri[clipData.getItemCount()];
+                    for (int i = 0; i < clipData.getItemCount(); i++) {
+                        ClipData.Item item = clipData.getItemAt(i);
+                        results[i] = item.getUri();
+                    }
                 }
-                break;
+                if (dataString != null)
+                    results = new Uri[]{Uri.parse(dataString)};
+            }
         }
+        mUploadCallbackAboveL.onReceiveValue(results);
+        mUploadCallbackAboveL = null;
     }
 
 
@@ -561,7 +579,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
             in.putExtra("eventurl", lri.getEventUrl());
             in.putExtra("openid", lri.getOpenId());
             in.putExtra("memberlevelid", lri.getMemberlevelid());
-            in.putExtra("isYaoyue",false);
+            in.putExtra("isYaoyue", false);
             in.putParcelableArrayListExtra("products_list", pList);
             shareInfo.setLiveId(s);
             in.putExtra("shareinfo", shareInfo);
@@ -570,25 +588,39 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         }
 
         @JavascriptInterface
-        public void openCamera(String liveId,String json){
+        public void openCamera(String liveId, String json) {
+            //清空自己的直播间的商品
+            if (pList.size() != 0) pList.clear();
             //邀约直播的参数
-            Intent in=new Intent(WebActivity.this,PushParamsActivity.class);
+            Intent in = new Intent(WebActivity.this, PushParamsActivity.class);
             try {
-                JSONObject jsonObject=new JSONObject(json);
+                JSONObject jsonObject = new JSONObject(json);
                 String pushUrl = jsonObject.getString("rtmp");
                 String memberLevel = jsonObject.getString("memberlevel");
                 String openId = jsonObject.getString("deleid");
-                in.putExtra("pushurl",pushUrl);
-                in.putExtra("openid",openId);
-                in.putExtra("memberlevelid",memberLevel);
+                String goods = jsonObject.getString("goods");
+                JSONArray object_goods = new JSONArray(goods);
+                for (int i = 0; i < object_goods.length(); i++) {
+                    JSONObject object_good = object_goods.getJSONObject(i);
+                    products = new Products();
+                    products.setProducts_id(object_good.getString("id"));
+                    products.setProducts_name(object_good.getString("name"));
+                    products.setProducts_price(object_good.getString("price"));
+                    String baseUrl = object_good.getString("img").startsWith("//") ? "http:" : mBase;
+                    products.setProducts_icon( baseUrl+ object_good.getString("img"));
+                    pList.add(products);
+                }
+                in.putExtra("pushurl", pushUrl);
+                in.putExtra("openid", openId);
+                in.putExtra("memberlevelid", memberLevel);
                 in.putExtra("eventurl", lri.getEventUrl());
-                in.putExtra("isYaoYue",true);
                 in.putParcelableArrayListExtra("products_list", pList);
+                Logger.t(TAG).json(json);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
             shareInfo.setLiveId(liveId);
-            in.putExtra("shareinfo",shareInfo);
+            in.putExtra("shareinfo", shareInfo);
             startActivity(in);
         }
 
@@ -616,7 +648,9 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
                         products.setProducts_id(object_good.getString("id"));
                         products.setProducts_name(object_good.getString("name"));
                         products.setProducts_price(object_good.getString("price"));
-                        products.setProducts_icon(object.getString("base") + object_good.getString("img"));
+                        mBase = object.getString("base");
+                        String mBaseUrl = object_good.getString("img").startsWith("//") ? "http:" : object.getString("base");
+                        products.setProducts_icon(mBaseUrl + object_good.getString("img"));
                         pList.add(products);
                     }
                     Logger.t(TAG).json(json);

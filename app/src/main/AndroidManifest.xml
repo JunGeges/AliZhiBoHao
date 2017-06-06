@@ -71,6 +71,21 @@
             android:screenOrientation="portrait"/>
         <activity android:name=".ProtocolActivity">
         </activity>
+
+        <provider
+            android:name="android.support.v4.content.FileProvider"
+            android:authorities="com.jph.takephoto.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
+
+        <activity android:name=".SpeedTestActivity"
+            android:screenOrientation="landscape"
+            >
+        </activity>
     </application>
 
 </manifest>

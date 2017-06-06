@@ -1,7 +1,12 @@
 package com.zmtmt.zhibohao;
 
 import android.Manifest;
+import android.animation.Animator;
+import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.app.Activity;
+import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
@@ -13,13 +18,13 @@ import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
-import android.support.v4.content.FileProvider;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.PopupWindow;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
@@ -80,6 +85,10 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
     int frameRate = 30;//帧率
     private Uri mUriFile;
     private Button btn_left_top, btn_left_bottom, btn_right_top, btn_right_bottom;
+    private ImageView mImageView;
+    private TextView mTextView;
+    private boolean isOpen;
+    private LinearLayout mLinearLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -90,6 +99,12 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
     }
 
     private void initViews() {
+        mImageView = (ImageView) findViewById(R.id.iv_speed);
+        mTextView = (TextView) findViewById(R.id.tv_speed);
+        mTextView.setOnClickListener(this);
+        mImageView.setOnClickListener(this);
+        mLinearLayout = (LinearLayout) findViewById(R.id.ll_speed_layout);
+
         btn_left_top = (Button) findViewById(R.id.btn_left_top);
         btn_left_bottom = (Button) findViewById(R.id.btn_left_bottom);
         btn_right_bottom = (Button) findViewById(R.id.btn_right_bottom);
@@ -167,10 +182,10 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         mRelativeLayout.setOnClickListener(this);
     }
 
-    private boolean isYaoYue;
     public void getExternalData() {
         Intent intent = getIntent();
         pushUrl = intent.getStringExtra("pushurl");
+//        pushUrl=" rtmp://video-center.alivecdn.com/live/123?vhost=ali.zipindao.tv";
 //        pushUrl="rtmp://appa-push.zipindao.tv/live/110";
         eventUrl = intent.getStringExtra("eventurl");
         openID = intent.getStringExtra("openid");
@@ -178,8 +193,6 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         Logger.t(TAG).d(eventUrl + "liveconsumeajax" + pushUrl);
         productList = intent.getParcelableArrayListExtra("products_list");
         mShareInfo = intent.getParcelableExtra("shareinfo");
-        isYaoYue=intent.getBooleanExtra("isYaoYue",false);
-        Logger.t(TAG).d(mShareInfo);
     }
 
     @Override
@@ -291,8 +304,7 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                         .eventUrl(eventUrl)
                         .productList(productList)
                         .shareInfo(mShareInfo)
-                        .openId(openID)
-                        .yaoYue(isYaoYue);
+                        .openId(openID);
                 LiveCameraActivity.startActivity(v.getContext(), builder);
                 break;
 
@@ -350,6 +362,23 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                 btn_right_top.setBackgroundResource(R.drawable.push_params_set_normal_btn);
                 btn_right_bottom.setBackgroundResource(R.drawable.push_params_set_click_btn);
                 site = AlivcWatermark.SITE_BOTTOM_RIGHT;
+                break;
+
+            case R.id.iv_speed:
+                if (!isOpen) {
+                    startAnimation();
+                    LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) mTextView.getLayoutParams();
+                    mTextView.setVisibility(View.VISIBLE);
+                    isOpen = true;
+                } else {
+                    startAnimation();
+                    isOpen = false;
+                }
+                break;
+
+            case R.id.tv_speed:
+                Intent intent=new Intent(this,SpeedTestActivity.class);
+                startActivity(intent);
                 break;
         }
     }
@@ -422,10 +451,12 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         if (Build.VERSION.SDK_INT < 24) {
             headImgUri = Uri.fromFile(outputImage);
         } else {
-            headImgUri = FileProvider.getUriForFile(PushParamsActivity.this, "com.example.cameraalbumtest.fileprovider", outputImage);
+            ContentValues contentValues = new ContentValues(1);
+            contentValues.put(MediaStore.Images.Media.DATA, outputImage.getAbsolutePath());
+            headImgUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,contentValues);
         }
         // 启动相机程序
-        Intent intent = new Intent("android.media.action.IMAGE_CAPTURE");
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         intent.putExtra(MediaStore.EXTRA_OUTPUT, headImgUri);
         startActivityForResult(intent, TAKE_PHOTO);
     }
@@ -447,7 +478,7 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         intent.putExtra("outputX", 100);
         intent.putExtra("outputY", 50);
         // 图片格式
-  /* intent.putExtra("outputFormat", "JPEG"); */
+        /* intent.putExtra("outputFormat", "JPEG"); */
         intent.putExtra("outputFormat", Bitmap.CompressFormat.JPEG.toString());
         // intent.putExtra("noFaceDetection", true);// 取消人脸识别
         intent.putExtra("return-data", true);// true:返回uri，false：不返回uri
@@ -481,6 +512,47 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                 break;
             default:
                 break;
+        }
+    }
+
+    private void startAnimation() {
+        AnimatorSet set=new AnimatorSet();
+        set.setDuration(500);
+        if (!isOpen) {
+            ObjectAnimator objectAnimatorT = ObjectAnimator.ofFloat(mLinearLayout, "translationX", 210, 0);
+            ObjectAnimator objectAnimatorA=ObjectAnimator.ofFloat(mTextView,"Alpha",0,1);
+            set.playTogether(objectAnimatorT,objectAnimatorA);
+            set.start();
+            set.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    mImageView.setImageResource(R.drawable.smooth_out);
+                }
+
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    super.onAnimationStart(animation);
+                }
+            });
+        }else {
+            ObjectAnimator objectAnimatorT = ObjectAnimator.ofFloat(mLinearLayout, "translationX", 0, 210);
+            ObjectAnimator objectAnimatorA=ObjectAnimator.ofFloat(mTextView,"Alpha",1,0);
+            set.playTogether(objectAnimatorT,objectAnimatorA);
+            set.start();
+            set.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationEnd(Animator animation) {
+                    super.onAnimationEnd(animation);
+                    mImageView.setImageResource(R.drawable.smooth_enter);
+                    mTextView.setVisibility(View.VISIBLE);
+                }
+
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    super.onAnimationStart(animation);
+                }
+            });
         }
     }
 }

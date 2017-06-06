@@ -191,7 +191,7 @@ public class Utils {
         }
     }
 
-    //判断手机摄像头石头支持闪光灯
+    //判断手机摄像头是否支持闪光灯
     public static boolean isSupportCameraLedFlash(PackageManager pm) {
         if (pm != null) {
             FeatureInfo[] features = pm.getSystemAvailableFeatures();

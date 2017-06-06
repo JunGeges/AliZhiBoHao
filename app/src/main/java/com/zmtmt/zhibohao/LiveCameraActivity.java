@@ -41,7 +41,6 @@ import android.widget.ListView;
 import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.alibaba.livecloud.event.AlivcEvent;
 import com.alibaba.livecloud.event.AlivcEventResponse;
@@ -108,7 +107,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         int memberlevelId;
         ShareInfo mShareInfo; //分享信息带直播会话ID
         String openID;
-        boolean isYaoYue;
 
         public RequestBuilder rtmpUrl(String url) {
             this.rtmpUrl = url;
@@ -200,11 +198,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             return this;
         }
 
-        public RequestBuilder yaoYue(boolean isYaoYue){
-            this.isYaoYue=isYaoYue;
-            return this;
-        }
-
         public Intent build(Context context) {
             Intent intent = new Intent(context, LiveCameraActivity.class);
             intent.putExtra(URL, rtmpUrl);
@@ -225,7 +218,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             intent.putExtra(EVENT_URL, eventUrl);
             intent.putExtra(PRODUCT_LIST, pList);
             intent.putExtra(OPEN_ID, openID);
-            intent.putExtra(ISYAOYUE,isYaoYue);
             return intent;
         }
 
@@ -251,7 +243,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     public final static String EVENT_URL = "event_url";
     public final static String PRODUCT_LIST = "product_list";
     public final static String OPEN_ID = "open_id";
-    public final static String ISYAOYUE="is_yao_yue";
 
     private static final int PERMISSION_REQUEST_CODE = 1;
     private static final String[] permissionManifest = {
@@ -286,7 +277,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     //评论
     private static final int UI_EVENT_GET_COMMENT = 11;
     private String pushUrl;
-    private boolean isYaoYue;
     private int resolution;
     private boolean screenOrientation;
     private int cameraFrontFacing;
@@ -373,6 +363,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         mMediaRecorder.setOnRecordErrorListener(mOnErrorListener);
 
         mConfigure.put(AlivcMediaFormat.KEY_CAMERA_FACING, cameraFrontFacing);
+        mConfigure.put(AlivcMediaFormat.KEY_I_FRAME_INTERNAL,2);
         mConfigure.put(AlivcMediaFormat.KEY_MAX_ZOOM_LEVEL, 3);
         mConfigure.put(AlivcMediaFormat.KEY_OUTPUT_RESOLUTION, resolution);
         mConfigure.put(AlivcMediaFormat.KEY_MAX_VIDEO_BITRATE, maxBitrate * 1000);
@@ -393,9 +384,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                 LayoutInflater layoutInflater = LayoutInflater.from(LiveCameraActivity.this);
                 View pop_talk_view = layoutInflater.inflate(R.layout.pop_talk_layout, null);
                 c_pop_talk_empty_tip = pop_talk_view.findViewById(R.id.c_pop_talk_empty_tip);
-                pop_comment = new PopupWindow(pop_talk_view);
-                pop_comment.setWidth(WindowManager.LayoutParams.WRAP_CONTENT);
-                pop_comment.setHeight(WindowManager.LayoutParams.WRAP_CONTENT);
+                pop_comment = new PopupWindow(pop_talk_view,WindowManager.LayoutParams.WRAP_CONTENT,WindowManager.LayoutParams.WRAP_CONTENT);
                 pop_comment.setFocusable(true);
                 pop_comment.setBackgroundDrawable(new ColorDrawable());
                 pop_comment.setOutsideTouchable(true);
@@ -425,8 +414,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         mRecorderButton.setOnClickListener(this);
         btn_pop_pro = (ImageView) findViewById(R.id.btn_pro);
         btn_pop_pro.setOnClickListener(this);
-        int visible=isYaoYue?View.INVISIBLE:View.VISIBLE;
-        btn_pop_pro.setVisibility(visible);
         btn_pop_talk = (ImageView) findViewById(R.id.btn_talk);
         btn_pop_talk.setOnClickListener(this);
         mTv_watch_person = (TextView) findViewById(R.id.tv_watch_person);
@@ -637,7 +624,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             memberlevelId = bundle.getInt(MEMBERLEVEL_ID);
             mShareInfo = bundle.getParcelable(SHARE_INFO);
             openID = bundle.getString(OPEN_ID);
-            isYaoYue=bundle.getBoolean(ISYAOYUE);
         }
     }
 
@@ -1298,20 +1284,26 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                 case AlivcStatusCode.ERROR_ILLEGAL_ARGUMENT:
                     showIllegalArgumentDialog("推流地址有误");
                 case AlivcStatusCode.ERROR_SERVER_CLOSED_CONNECTION:
+                    //发生违法操作时，服务器会主动断开链接
                     addView(new TextView(LiveCameraActivity.this), "服务器断开连接");
                 case AlivcStatusCode.ERORR_OUT_OF_MEMORY:
+                    //手机内存不足时导致底层某些内存开辟失败引起该错误
                     addView(new TextView(LiveCameraActivity.this), "内存不足");
                     break;
                 case AlivcStatusCode.ERROR_CONNECTION_TIMEOUT:
+                    //网络较差时导致链接超时或者数据发送超时
                     addView(new TextView(LiveCameraActivity.this), "网络超时");
                     break;
                 case AlivcStatusCode.ERROR_BROKEN_PIPE:
+                    //	推流时进行了违法操作，比如同时推流同一个地址，或者重复推流，服务器端会主动关闭socket，引起broken pipe
                     addView(new TextView(LiveCameraActivity.this), "推流中断");
                     break;
                 case AlivcStatusCode.ERROR_IO:
+                    //导致该错误的情况比较多，比如网络环境较差或者推流域名错误等导致DNS解析失败等
                     addView(new TextView(LiveCameraActivity.this), "I/O错误");
                     break;
                 case AlivcStatusCode.ERROR_NETWORK_UNREACHABLE:
+                    //该错误通常发生在网络无法传输数据的情况，或者推流过程网络中断等情况
                     addView(new TextView(LiveCameraActivity.this), "网络情况差");
                     break;
 
@@ -1426,9 +1418,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         push_state_ll.setVisibility(View.INVISIBLE);
         LayoutInflater inflater = LayoutInflater.from(this);
         View pop_products_layout = inflater.inflate(R.layout.pop_pro_layout, null);
-        pop_products = new PopupWindow(pop_products_layout);
-        pop_products.setHeight(WindowManager.LayoutParams.WRAP_CONTENT);
-        pop_products.setWidth(WindowManager.LayoutParams.WRAP_CONTENT);
+        pop_products = new PopupWindow(pop_products_layout,WindowManager.LayoutParams.WRAP_CONTENT,WindowManager.LayoutParams.WRAP_CONTENT);
         pop_products.setFocusable(true);
         pop_products.setBackgroundDrawable(new ColorDrawable());
         pop_products.setOutsideTouchable(true);
