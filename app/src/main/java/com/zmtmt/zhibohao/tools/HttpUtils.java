@@ -21,7 +21,7 @@ import java.util.Map;
 public class HttpUtils {
     //网络请求返回json  GET
     @Nullable //表示定义的字段可以为空
-    public static String get(String url) {
+    public static void get(String url,NetWorkStatus netWorkStatus) {
         BufferedReader bufferedReader = null;
         HttpURLConnection connection=null;
         try {
@@ -37,9 +37,10 @@ public class HttpUtils {
                 while ((str = bufferedReader.readLine()) != null) {
                     sb.append(str);
                 }
-                return sb.toString();
+                netWorkStatus.onSuccessful(sb.toString());
             }
         } catch (Exception e) {
+            netWorkStatus.onFailed(e.toString());
             e.printStackTrace();
         } finally {
             try {
@@ -53,11 +54,10 @@ public class HttpUtils {
                 connection.disconnect();
             }
         }
-        return null;
     }
 
     //网络请求 POST
-    public static String post(String url, Map<String, String> params) {
+    public static void post(String url, Map<String, String> params,NetWorkStatus netWorkStatus) {
         BufferedReader bufferedReader = null;
         HttpURLConnection conn = null;
         try {
@@ -89,11 +89,13 @@ public class HttpUtils {
                 while ((response = bufferedReader.readLine()) != null) {
                     sb.append(response);
                 }
-                return sb.toString();
+                netWorkStatus.onSuccessful(response);
             }
         } catch (MalformedURLException e) {
+            netWorkStatus.onFailed(e.toString());
             e.printStackTrace();
         } catch (IOException e) {
+            netWorkStatus.onFailed(e.toString());
             e.printStackTrace();
         } finally {
             try {
@@ -107,7 +109,6 @@ public class HttpUtils {
                 conn.disconnect();
             }
         }
-        return null;
     }
 
     /**
@@ -132,5 +133,10 @@ public class HttpUtils {
             e.printStackTrace();
         }
         return null;
+    }
+
+    public interface NetWorkStatus{
+        void onSuccessful(String response);
+        void onFailed(String error);
     }
 }

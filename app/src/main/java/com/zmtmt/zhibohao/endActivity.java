@@ -8,7 +8,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.RelativeLayout;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
@@ -27,7 +26,6 @@ public class endActivity extends AppCompatActivity implements View.OnClickListen
     private long mLiveTime;
     private String mLivePersons;
     private CircleImageView mCircleImageView;
-    private RelativeLayout mRelativeLayout;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +43,6 @@ public class endActivity extends AppCompatActivity implements View.OnClickListen
     }
 
     private void initViews() {
-        mRelativeLayout = (RelativeLayout) findViewById(R.id.activity_end2);
         mTextViewTime = (TextView) findViewById(R.id.end_tv_live_time);
         mTextViewPersons = (TextView) findViewById(R.id.end_tv_persons);
         mButtonConfirm = (Button) findViewById(R.id.end_btn_confirm);

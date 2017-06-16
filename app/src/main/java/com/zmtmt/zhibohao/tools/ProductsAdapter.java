@@ -2,7 +2,6 @@ package com.zmtmt.zhibohao.tools;
 
 import android.content.Context;
 import android.graphics.Color;
-import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
@@ -87,7 +86,17 @@ public class ProductsAdapter extends BaseAdapter {
                         @Override
                         public void run() {
                             super.run();
-                            String post = HttpUtils.post(url, params);
+                            HttpUtils.post(url, params, new HttpUtils.NetWorkStatus() {
+                                @Override
+                                public void onSuccessful(String response) {
+
+                                }
+
+                                @Override
+                                public void onFailed(String error) {
+
+                                }
+                            });
                         }
                     }.start();
                     vh.btn_pop_products_isRecommend.setText("已推荐");

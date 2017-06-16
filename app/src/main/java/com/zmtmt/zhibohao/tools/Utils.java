@@ -12,6 +12,7 @@ import android.graphics.PorterDuffXfermode;
 import android.graphics.RectF;
 import android.os.AsyncTask;
 import android.util.LruCache;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -203,5 +204,16 @@ public class Utils {
             }
         }
         return false;
+    }
+
+    /**
+     * 测量View的宽高
+     *
+     * @param view View
+     */
+    public static void measureWidthAndHeight(View view) {
+        int w = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        int h = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED);
+        view.measure(w, h);
     }
 }

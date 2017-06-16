@@ -8,7 +8,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -28,9 +27,9 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.PopupWindow;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
@@ -43,6 +42,7 @@ import com.zmtmt.zhibohao.tools.HttpUtils;
 import com.zmtmt.zhibohao.tools.ShareUtils;
 import com.zmtmt.zhibohao.tools.Utils;
 import com.zmtmt.zhibohao.widget.CustomDialog;
+import com.zmtmt.zhibohao.widget.CustomPopupWindow;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -83,7 +83,7 @@ import static android.webkit.WebSettings.LOAD_NO_CACHE;
  */
 
 @SuppressLint("JavascriptInterface")
-public class WebActivity extends AppCompatActivity implements View.OnClickListener {
+public class WebActivity extends AppCompatActivity implements View.OnClickListener, CustomPopupWindow.ViewInterface {
     private static final String TAG = "WebActivity";
     private static final String URL = "http://www.zipindao.tv/app/index.php?c=entry&m=wg_test&i=4&do=applogin";
     private static final String INDEXURL = "http://www.zipindao.tv/app/index.php?c=entry&m=wg_test&do=myroomlive&i=4";
@@ -93,13 +93,11 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
 
     private final static int FILECHOOSER_RESULTCODE = 1;
     private ProgressBar mProgressBar;
-    private PopupWindow pop;
     private RelativeLayout rl_back, rl_option;
     private TextView tv_url_title;
     private LiveRoomInfo lri;//直播房间信息
     private Products products;
     private ArrayList<Products> pList;
-    private WindowManager.LayoutParams params;
     private static final int WXSCENETIMELINE = 1;//朋友圈
     private static final int WXSCENESESSION = 2;//好友
     private int versionCode;
@@ -107,12 +105,14 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     private ShareInfo shareInfo;
     private List<ShareInfo> sList = new ArrayList<>();
     private long exitTime = 0;
-    private PopupWindow mPopupWindow;
-    private PopupWindow mLogOffWindow;
     private ArrayAdapter<String> adapter;
     private File file;
     private CustomDialog mCustomDialog;
     private String mBase;
+    private FrameLayout mFrameLayout;
+    private CustomPopupWindow mCustomPopupWindow_logff;
+    private CustomPopupWindow mCustomPopupWindow_option;
+    private CustomPopupWindow mCustomPopupWindow_share;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,9 +125,8 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mLogOffWindow != null && mLogOffWindow.isShowing()) {
-            mLogOffWindow.dismiss();
-        }
+        if (mCustomPopupWindow_logff != null && mCustomPopupWindow_logff.isShowing()) mCustomPopupWindow_logff.dismiss();
+        if(mCustomPopupWindow_option!=null&&mCustomPopupWindow_option.isShowing())mCustomPopupWindow_option.dismiss();
     }
 
     private void initViews() {
@@ -139,6 +138,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         rl_option = (RelativeLayout) findViewById(R.id.rl_option);
         rl_option.setOnClickListener(this);
         mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
+        mFrameLayout = (FrameLayout) findViewById(R.id.frame_layout);
         WebSettings settings = mWebView.getSettings();
         //开启javascript
         settings.setJavaScriptEnabled(true);
@@ -197,8 +197,8 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.tv_cancel:
-                if (pop != null && pop.isShowing()) {
-                    pop.dismiss();
+                if (mCustomPopupWindow_share != null && mCustomPopupWindow_share.isShowing()) {
+                    mCustomPopupWindow_share.dismiss();
                 }
                 break;
 
@@ -227,8 +227,8 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
                 break;
 
             case R.id.tv__logoff_cancel:
-                if (mLogOffWindow != null && mLogOffWindow.isShowing()) {
-                    mLogOffWindow.dismiss();
+                if (mCustomPopupWindow_logff != null && mCustomPopupWindow_logff.isShowing()) {
+                    mCustomPopupWindow_logff.dismiss();
                 }
                 break;
 
@@ -254,6 +254,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         }
     }
 
+    //注销功能
     private void logoff() {
         SharedPreferences.Editor sp = getSharedPreferences("unionId", WebActivity.MODE_PRIVATE).edit();
         sp.clear();
@@ -264,75 +265,65 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     }
 
     private void showLogoffWindow() {
-        params = WebActivity.this.getWindow().getAttributes();
-        params.alpha = 0.5f;
-        WebActivity.this.getWindow().setAttributes(params);
-        LayoutInflater layoutInflater = LayoutInflater.from(this);
-        View view = layoutInflater.inflate(R.layout.logoff_layout, null);
-        mLogOffWindow = new PopupWindow(view, 850, WindowManager.LayoutParams.WRAP_CONTENT);
-        mLogOffWindow.setFocusable(true);
-        mLogOffWindow.setBackgroundDrawable(new BitmapDrawable());
-        mLogOffWindow.setOutsideTouchable(true);
-        mLogOffWindow.showAtLocation(mWebView, Gravity.CENTER, 0, 0);
-        mLogOffWindow.setOnDismissListener(new PopupWindow.OnDismissListener() {
-            @Override
-            public void onDismiss() {
-                params.alpha = 1.0f;
-                WebActivity.this.getWindow().setAttributes(params);
-            }
-        });
-
-        view.findViewById(R.id.tv__logoff_cancel).setOnClickListener(this);
-        view.findViewById(R.id.tv_confirm).setOnClickListener(this);
-        mPopupWindow.dismiss();
+        if (mCustomPopupWindow_logff != null && mCustomPopupWindow_logff.isShowing()) return;
+        mCustomPopupWindow_logff = new CustomPopupWindow.Builder(this)
+                .setView(R.layout.logoff_layout)
+                .setWidthAndHeight(850, WindowManager.LayoutParams.WRAP_CONTENT)
+                .setOutsideTouchable(true)
+                .setBackGroundLevel(0.5f)
+                .setViewOnclickListener(this)
+                .create();
+        mCustomPopupWindow_logff.showAtLocation(mWebView, Gravity.CENTER, 0, 0);
     }
 
     private void showOptionPopWindow() {
-        LayoutInflater layoutInflater = LayoutInflater.from(this);
-        View view = layoutInflater.inflate(R.layout.pop_option_layout, null);
-        mPopupWindow = new PopupWindow(view, 400, WindowManager.LayoutParams.WRAP_CONTENT);
-        mPopupWindow.setFocusable(true);
-        mPopupWindow.setBackgroundDrawable(new BitmapDrawable());
-        mPopupWindow.setOutsideTouchable(true);
-        mPopupWindow.showAsDropDown(rl_option);
-
-        TextView tv_share = (TextView) view.findViewById(R.id.tv_share);
-        tv_share.setOnClickListener(this);
-
-        TextView tv_logoff = (TextView) view.findViewById(R.id.tv_logoff);
-        tv_logoff.setOnClickListener(this);
+        if (mCustomPopupWindow_option != null && mCustomPopupWindow_option.isShowing()) return;
+        mCustomPopupWindow_option = new CustomPopupWindow.Builder(this)
+                .setView(R.layout.pop_option_layout)
+                .setWidthAndHeight(400, WindowManager.LayoutParams.WRAP_CONTENT)
+                .setOutsideTouchable(true)
+                .setViewOnclickListener(this)
+                .create();
+        mCustomPopupWindow_option.showAsDropDown(rl_option);
     }
 
     public void showSharePopWindow() {
-        params = WebActivity.this.getWindow().getAttributes();
-        params.alpha = 0.5f;
-        WebActivity.this.getWindow().setAttributes(params);
-        LayoutInflater layoutInflater = LayoutInflater.from(WebActivity.this);
-        View pop_share_view = layoutInflater.inflate(R.layout.pop_share_layout, null);
-        pop = new PopupWindow(pop_share_view, WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-        pop.setFocusable(true);
-        pop.setBackgroundDrawable(new BitmapDrawable());
-        pop.setAnimationStyle(R.style.ShareAnimation);
-        pop.setOutsideTouchable(true);
-        View ll = layoutInflater.inflate(R.layout.activity_webview, null);
-        pop.showAtLocation(ll, Gravity.BOTTOM, 0, 0);
-        LinearLayout ll__share_circle = (LinearLayout) pop_share_view.findViewById(R.id.ll__share_circle);
-        ll__share_circle.setOnClickListener(this);
-        LinearLayout ll_share_friend = (LinearLayout) pop_share_view.findViewById(R.id.ll_share_friend);
-        ll_share_friend.setOnClickListener(this);
-        tv_cancel = (TextView) pop_share_view.findViewById(R.id.tv_cancel);
-        tv_cancel.setOnClickListener(WebActivity.this);
+        if (mCustomPopupWindow_share != null && mCustomPopupWindow_share.isShowing()) return;
+        mCustomPopupWindow_share = new CustomPopupWindow.Builder(this)
+                .setView(R.layout.pop_share_layout)
+                .setWidthAndHeight(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT)
+                .setOutsideTouchable(true)
+                .setViewOnclickListener(this)
+                .setBackGroundLevel(0.5f)
+                .setAnimationStyle(R.style.ShareAnimation)
+                .create();
+        mCustomPopupWindow_share.showAtLocation(LayoutInflater.from(WebActivity.this).inflate(R.layout.activity_webview, null), Gravity.BOTTOM, 0, 0);
+    }
 
-        pop.setOnDismissListener(new PopupWindow.OnDismissListener() {
-            @Override
-            public void onDismiss() {
-                if (!pop.isShowing()) {
-                    params.alpha = 1.0f;
-                    WebActivity.this.getWindow().setAttributes(params);
-                }
-            }
-        });
-        mPopupWindow.dismiss();
+    @Override
+    public void getChildView(View view, int layoutResId) {
+        switch (layoutResId) {
+            case R.layout.pop_option_layout:
+                TextView tv_share = (TextView) view.findViewById(R.id.tv_share);
+                TextView tv_logoff = (TextView) view.findViewById(R.id.tv_logoff);
+                tv_share.setOnClickListener(this);
+                tv_logoff.setOnClickListener(this);
+                break;
+
+            case R.layout.logoff_layout:
+                view.findViewById(R.id.tv__logoff_cancel).setOnClickListener(this);
+                view.findViewById(R.id.tv_confirm).setOnClickListener(this);
+                break;
+
+            case R.layout.pop_share_layout:
+                LinearLayout ll__share_circle = (LinearLayout) view.findViewById(R.id.ll__share_circle);
+                LinearLayout ll_share_friend = (LinearLayout) view.findViewById(R.id.ll_share_friend);
+                tv_cancel = (TextView) view.findViewById(R.id.tv_cancel);
+                ll__share_circle.setOnClickListener(this);
+                ll_share_friend.setOnClickListener(this);
+                tv_cancel.setOnClickListener(WebActivity.this);
+                break;
+        }
     }
 
     class MyWebViewClient extends WebViewClient {
@@ -357,16 +348,16 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
 
 
         @Override
-        public void onPageFinished(WebView webView, String s) {
-            super.onPageFinished(webView, s);
+        public void onPageFinished(WebView webView, String url) {
+            super.onPageFinished(webView, url);
             mProgressBar.setVisibility(View.GONE);
             tv_url_title.setText(webView.getTitle());
         }
 
         @Override
-        public void onReceivedError(WebView webView, int i, String s, String s1) {
-            super.onReceivedError(webView, i, s, s1);
-            Utils.showToast(WebActivity.this, "后台数据走丢啦! ");
+        public void onReceivedError(WebView webView, int errorCode, String description, String failingUrl) {
+            super.onReceivedError(webView, errorCode, description, failingUrl);
+            Utils.showToast(WebActivity.this, "请检查您的网络! ");
         }
     }
 
@@ -607,7 +598,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
                     products.setProducts_name(object_good.getString("name"));
                     products.setProducts_price(object_good.getString("price"));
                     String baseUrl = object_good.getString("img").startsWith("//") ? "http:" : mBase;
-                    products.setProducts_icon( baseUrl+ object_good.getString("img"));
+                    products.setProducts_icon(baseUrl + object_good.getString("img"));
                     pList.add(products);
                 }
                 in.putExtra("pushurl", pushUrl);

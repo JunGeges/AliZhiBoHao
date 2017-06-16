@@ -10,7 +10,6 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
-import android.graphics.drawable.BitmapDrawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -25,7 +24,6 @@ import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
-import android.widget.PopupWindow;
 import android.widget.RadioButton;
 import android.widget.RadioGroup;
 import android.widget.RelativeLayout;
@@ -38,6 +36,7 @@ import com.alibaba.livecloud.model.AlivcWatermark;
 import com.orhanobut.logger.Logger;
 import com.zmtmt.zhibohao.entity.Products;
 import com.zmtmt.zhibohao.entity.ShareInfo;
+import com.zmtmt.zhibohao.widget.CustomPopupWindow;
 
 import java.io.File;
 import java.io.IOException;
@@ -64,8 +63,6 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
     private SeekBar sb_mlv;
     private RelativeLayout mRelativeLayout;
     private TextView tv_cancel;
-    private WindowManager.LayoutParams params;
-    private PopupWindow pop;
 
     public static final int TAKE_PHOTO = 1;
     public static final int CROP_PHOTO = 2;
@@ -89,6 +86,7 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
     private TextView mTextView;
     private boolean isOpen;
     private LinearLayout mLinearLayout;
+    private CustomPopupWindow mCustomPopupWindow;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -144,7 +142,7 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         sb_mlv.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                mSeekBarlv.setText("(" +progress+ ")");
+                mSeekBarlv.setText("(" + progress + ")");
             }
 
             @Override
@@ -162,7 +160,7 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         sb_zlv.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-                zhenSeekBarlv.setText("(" + progress+ ")");
+                zhenSeekBarlv.setText("(" + progress + ")");
             }
 
             @Override
@@ -185,8 +183,8 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
     public void getExternalData() {
         Intent intent = getIntent();
         pushUrl = intent.getStringExtra("pushurl");
-//        pushUrl=" rtmp://video-center.alivecdn.com/live/123?vhost=ali.zipindao.tv";
-//        pushUrl="rtmp://appa-push.zipindao.tv/live/110";
+//        pushUrl=" rtmp://video-center.alivecdn.com/live/123?vhost=ali.zipindao.tv";//阿里流
+//        pushUrl="rtmp://appa-push.zipindao.tv/live/110";//网宿流
         eventUrl = intent.getStringExtra("eventurl");
         openID = intent.getStringExtra("openid");
         memberlevelId = Integer.parseInt(intent.getStringExtra("memberlevelid"));
@@ -313,7 +311,7 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                 break;
 
             case R.id.tv_cancel:
-                pop.dismiss();
+                mCustomPopupWindow.dismiss();
                 break;
 
             case R.id.tv_choose_photo:
@@ -367,7 +365,6 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
             case R.id.iv_speed:
                 if (!isOpen) {
                     startAnimation();
-                    LinearLayout.LayoutParams layoutParams = (LinearLayout.LayoutParams) mTextView.getLayoutParams();
                     mTextView.setVisibility(View.VISIBLE);
                     isOpen = true;
                 } else {
@@ -377,44 +374,32 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                 break;
 
             case R.id.tv_speed:
-                Intent intent=new Intent(this,SpeedTestActivity.class);
+                Intent intent = new Intent(this, SpeedTestActivity.class);
                 startActivity(intent);
                 break;
         }
     }
 
     private void showPopWindow() {
-        //当分享窗口弹出的时候设置主窗口的背景为50%的透明度，窗口消失的时候恢复
-        params = PushParamsActivity.this.getWindow().getAttributes();
-        params.alpha = 0.5f;
-        PushParamsActivity.this.getWindow().setAttributes(params);
-        LayoutInflater layoutInflater = LayoutInflater.from(PushParamsActivity.this);
-        View pop_show_view = layoutInflater.inflate(R.layout.pop_pick_directory, null);
-        pop = new PopupWindow(pop_show_view, WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT);
-        pop.setFocusable(true);
-        pop.setBackgroundDrawable(new BitmapDrawable());
-        pop.setAnimationStyle(R.style.ShareAnimation);
-        pop.setOutsideTouchable(true);
-        View ll = layoutInflater.inflate(R.layout.activity_webview, null);
-        pop.showAtLocation(ll, Gravity.BOTTOM, 0, 0);
-        tv_cancel = (TextView) pop_show_view.findViewById(R.id.tv_cancel);
-        tv_cancel.setOnClickListener(PushParamsActivity.this);
-
-        TextView choose_photo = (TextView) pop_show_view.findViewById(R.id.tv_choose_photo);
-        choose_photo.setOnClickListener(this);
-        TextView take_photo = (TextView) pop_show_view.findViewById(R.id.tv_take_photo);
-        take_photo.setOnClickListener(this);
-
-
-        pop.setOnDismissListener(new PopupWindow.OnDismissListener() {
-            @Override
-            public void onDismiss() {
-                if (!pop.isShowing()) {
-                    params.alpha = 1.0f;
-                    PushParamsActivity.this.getWindow().setAttributes(params);
-                }
-            }
-        });
+        mCustomPopupWindow = new CustomPopupWindow.Builder(this)
+                .setView(R.layout.pop_pick_directory)
+                .setWidthAndHeight(WindowManager.LayoutParams.MATCH_PARENT, WindowManager.LayoutParams.WRAP_CONTENT)
+                .setOutsideTouchable(true)
+                .setAnimationStyle(R.style.ShareAnimation)
+                .setBackGroundLevel(0.5f)
+                .setViewOnclickListener(new CustomPopupWindow.ViewInterface() {
+                    @Override
+                    public void getChildView(View view, int layoutResId) {
+                        tv_cancel = (TextView) view.findViewById(R.id.tv_cancel);
+                        TextView choose_photo = (TextView) view.findViewById(R.id.tv_choose_photo);
+                        TextView take_photo = (TextView) view.findViewById(R.id.tv_take_photo);
+                        choose_photo.setOnClickListener(PushParamsActivity.this);
+                        tv_cancel.setOnClickListener(PushParamsActivity.this);
+                        take_photo.setOnClickListener(PushParamsActivity.this);
+                    }
+                })
+                .create();
+        mCustomPopupWindow.showAtLocation(LayoutInflater.from(PushParamsActivity.this).inflate(R.layout.activity_webview, null), Gravity.BOTTOM, 0, 0);
     }
 
     private void openAlbum() {
@@ -453,7 +438,7 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         } else {
             ContentValues contentValues = new ContentValues(1);
             contentValues.put(MediaStore.Images.Media.DATA, outputImage.getAbsolutePath());
-            headImgUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI,contentValues);
+            headImgUri = getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues);
         }
         // 启动相机程序
         Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -507,7 +492,7 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                     String path = mUriFile.getPath();
                     watermarkUrl = path;
                     pickDirectory.setImageBitmap(cropBitmap);
-                    pop.dismiss();
+                    mCustomPopupWindow.dismiss();
                 }
                 break;
             default:
@@ -516,12 +501,12 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
     }
 
     private void startAnimation() {
-        AnimatorSet set=new AnimatorSet();
+        AnimatorSet set = new AnimatorSet();
         set.setDuration(500);
         if (!isOpen) {
             ObjectAnimator objectAnimatorT = ObjectAnimator.ofFloat(mLinearLayout, "translationX", 210, 0);
-            ObjectAnimator objectAnimatorA=ObjectAnimator.ofFloat(mTextView,"Alpha",0,1);
-            set.playTogether(objectAnimatorT,objectAnimatorA);
+            ObjectAnimator objectAnimatorA = ObjectAnimator.ofFloat(mTextView, "Alpha", 0, 1);
+            set.playTogether(objectAnimatorT, objectAnimatorA);
             set.start();
             set.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -529,16 +514,11 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                     super.onAnimationEnd(animation);
                     mImageView.setImageResource(R.drawable.smooth_out);
                 }
-
-                @Override
-                public void onAnimationStart(Animator animation) {
-                    super.onAnimationStart(animation);
-                }
             });
-        }else {
+        } else {
             ObjectAnimator objectAnimatorT = ObjectAnimator.ofFloat(mLinearLayout, "translationX", 0, 210);
-            ObjectAnimator objectAnimatorA=ObjectAnimator.ofFloat(mTextView,"Alpha",1,0);
-            set.playTogether(objectAnimatorT,objectAnimatorA);
+            ObjectAnimator objectAnimatorA = ObjectAnimator.ofFloat(mTextView, "Alpha", 1, 0);
+            set.playTogether(objectAnimatorT, objectAnimatorA);
             set.start();
             set.addListener(new AnimatorListenerAdapter() {
                 @Override
@@ -546,11 +526,6 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                     super.onAnimationEnd(animation);
                     mImageView.setImageResource(R.drawable.smooth_enter);
                     mTextView.setVisibility(View.VISIBLE);
-                }
-
-                @Override
-                public void onAnimationStart(Animator animation) {
-                    super.onAnimationStart(animation);
                 }
             });
         }

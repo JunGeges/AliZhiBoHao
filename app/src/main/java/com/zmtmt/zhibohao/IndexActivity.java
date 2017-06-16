@@ -63,9 +63,6 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
         Logger.t(TAG).d("onDestroy");
     }
 
-    /**
-     * 初始化控件
-     */
     private void initView() {
         mProtocol = (TextView)findViewById(R.id.tv_protocol);
         mProtocol.setOnClickListener(this);
@@ -151,7 +148,7 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
         super.onStop();
         btn_login.setText("微信授权登录");
     }
-
+    String str;
     //以下针对更新升级
     private void checkVersion() {
         new UpdateVersionTask().execute(UPGRADE_URL);
@@ -163,7 +160,18 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
 
         @Override
         protected String doInBackground(String... strings) {
-            String str = HttpUtils.get(strings[0]);
+
+            HttpUtils.get(strings[0], new HttpUtils.NetWorkStatus() {
+                @Override
+                public void onSuccessful(String response) {
+                     str=response;
+                }
+
+                @Override
+                public void onFailed(String error) {
+
+                }
+            });
             return str;
         }
 

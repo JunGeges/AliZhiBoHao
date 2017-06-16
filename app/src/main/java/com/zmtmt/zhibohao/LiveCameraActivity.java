@@ -12,7 +12,6 @@ import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
-import android.graphics.drawable.ColorDrawable;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -65,6 +64,7 @@ import com.zmtmt.zhibohao.tools.ProductsAdapter;
 import com.zmtmt.zhibohao.tools.ShareUtils;
 import com.zmtmt.zhibohao.tools.Utils;
 import com.zmtmt.zhibohao.widget.CountTimeView;
+import com.zmtmt.zhibohao.widget.CustomPopupWindow;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -80,7 +80,7 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 import static com.zmtmt.zhibohao.R.id.ll_camera;
 
-public class LiveCameraActivity extends Activity implements View.OnClickListener, View.OnTouchListener {
+public class LiveCameraActivity extends Activity implements View.OnClickListener, View.OnTouchListener,CustomPopupWindow.ViewInterface {
 
     private PopupWindow mPop_settings;
     private LinearLayout mLl_share;
@@ -333,6 +333,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         context.startActivity(intent);
     }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -363,7 +364,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         mMediaRecorder.setOnRecordErrorListener(mOnErrorListener);
 
         mConfigure.put(AlivcMediaFormat.KEY_CAMERA_FACING, cameraFrontFacing);
-        mConfigure.put(AlivcMediaFormat.KEY_I_FRAME_INTERNAL,2);
+        mConfigure.put(AlivcMediaFormat.KEY_I_FRAME_INTERNAL, 2);
         mConfigure.put(AlivcMediaFormat.KEY_MAX_ZOOM_LEVEL, 3);
         mConfigure.put(AlivcMediaFormat.KEY_OUTPUT_RESOLUTION, resolution);
         mConfigure.put(AlivcMediaFormat.KEY_MAX_VIDEO_BITRATE, maxBitrate * 1000);
@@ -376,19 +377,20 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         mConfigure.put(AlivcMediaFormat.KEY_FRAME_RATE, frameRate);
         mConfigure.put(AlivcMediaFormat.KEY_AUDIO_BITRATE, 32000);
         mConfigure.put(AlivcMediaFormat.KEY_AUDIO_SAMPLE_RATE, 44100);
+
         setLogo();
 
         wx_user_name.post(new Runnable() {
             @Override
             public void run() {
-                LayoutInflater layoutInflater = LayoutInflater.from(LiveCameraActivity.this);
-                View pop_talk_view = layoutInflater.inflate(R.layout.pop_talk_layout, null);
+                View pop_talk_view = LayoutInflater.from(LiveCameraActivity.this).inflate(R.layout.pop_talk_layout, null);
                 c_pop_talk_empty_tip = pop_talk_view.findViewById(R.id.c_pop_talk_empty_tip);
-                pop_comment = new PopupWindow(pop_talk_view,WindowManager.LayoutParams.WRAP_CONTENT,WindowManager.LayoutParams.WRAP_CONTENT);
-                pop_comment.setFocusable(true);
-                pop_comment.setBackgroundDrawable(new ColorDrawable());
-                pop_comment.setOutsideTouchable(true);
-                pop_comment.setAnimationStyle(R.style.AnimationFade);
+                pop_comment=new CustomPopupWindow.Builder(LiveCameraActivity.this)
+                        .setView(pop_talk_view)
+                        .setWidthAndHeight(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT)
+                        .setOutsideTouchable(true)
+                        .setAnimationStyle(R.style.AnimationFade)
+                        .create();
                 pop_comment.setOnDismissListener(new PopupWindow.OnDismissListener() {
                     @Override
                     public void onDismiss() {
@@ -399,7 +401,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                 mListView = (ListView) pop_talk_view.findViewById(R.id.lv_pop_comment);
             }
         });
-//        Toast.makeText(this, "帧率：" + frameRate + "初始化码率:" + initBitrate + "  最大码率：" + maxBitrate + " 最小码率:" + minBitrate + " 最佳码率" + bestBitrate, Toast.LENGTH_LONG).show();
     }
 
     private void initView() {
@@ -590,13 +591,13 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private void setCamera() {
         mCurrFacing = mMediaRecorder.switchCamera();
         if (mCurrFacing == AlivcMediaFormat.CAMERA_FACING_FRONT) {
-           if(flash_is_open){
-               iv_flash.setImageResource(R.drawable.button_light_off);
-               mMediaRecorder.removeFlag(AlivcMediaFormat.FLAG_FLASH_MODE_ON);
-               tv_flash.setText("开启闪光");
-               Utils.showToast(this, "闪光灯已关闭");
-               flash_is_open=true;
-           }
+            if (flash_is_open) {
+                iv_flash.setImageResource(R.drawable.button_light_off);
+                mMediaRecorder.removeFlag(AlivcMediaFormat.FLAG_FLASH_MODE_ON);
+                tv_flash.setText("开启闪光");
+                Utils.showToast(this, "闪光灯已关闭");
+                flash_is_open = true;
+            }
         }
         mConfigure.put(AlivcMediaFormat.KEY_CAMERA_FACING, mCurrFacing);
     }
@@ -824,7 +825,17 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         new Thread() {
             @Override
             public void run() {
-                HttpUtils.post(eventUrl + "applogin", param);//做网络请求 通知服务器 改变直播状态
+                HttpUtils.post(eventUrl + "applogin", param, new HttpUtils.NetWorkStatus() {
+                    @Override
+                    public void onSuccessful(String response) {
+
+                    }
+
+                    @Override
+                    public void onFailed(String error) {
+
+                    }
+                });//做网络请求 通知服务器 改变直播状态
             }
         }.start();
     }
@@ -838,83 +849,92 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             params.put("isNew", IS_NEW);
             params.put("liveid", mShareInfo.getLiveId());
             params.put("id", ID);
-            final String json = HttpUtils.post(strings[0] + "roomlivegetajax", params);
-            if (json != null) {
-                try {
-                    JSONArray array = new JSONArray(json);
-                    JSONArray array_1 = array.getJSONArray(0);
-                    String isNew = array_1.getString(0);
-                    ID = array_1.getString(1);
-                    person = array_1.getString(2);
-                    for (int i = 1; i < array.length(); i++) {
-                        final Comment c = new Comment();//评论类
-                        CommentContent c_content = new CommentContent();//评论内容类
-                        JSONObject object = array.getJSONObject(i);
-                        //commenttype  1：普通评论 2:主播推荐商品  3：系统礼物提示  4：系统商品买卖提示
-                        String comment_type = object.getString("commenttype");
-                        if (comment_type.equals("1")) {
-                            c_content.setCommentContent(object.getString("commentcontent"));
-                            c.setComment_content(c_content);
-                            c.setCommenttype(object.getString("commenttype"));
-                            c.setIssystem(object.getString("issystem"));
+            HttpUtils.post(strings[0] + "roomlivegetajax", params, new HttpUtils.NetWorkStatus() {
+                @Override
+                public void onSuccessful(String response) {
+                    if (response != null) {
+                        try {
+                            JSONArray array = new JSONArray(response);
+                            JSONArray array_1 = array.getJSONArray(0);
+                            String isNew = array_1.getString(0);
+                            ID = array_1.getString(1);
+                            person = array_1.getString(2);
+                            for (int i = 1; i < array.length(); i++) {
+                                final Comment c = new Comment();//评论类
+                                CommentContent c_content = new CommentContent();//评论内容类
+                                JSONObject object = array.getJSONObject(i);
+                                //commenttype  1：普通评论 2:主播推荐商品  3：系统礼物提示  4：系统商品买卖提示
+                                String comment_type = object.getString("commenttype");
+                                if (comment_type.equals("1")) {
+                                    c_content.setCommentContent(object.getString("commentcontent"));
+                                    c.setComment_content(c_content);
+                                    c.setCommenttype(object.getString("commenttype"));
+                                    c.setIssystem(object.getString("issystem"));
 
-                            c.setComment_head_url(object.getString("userimg"));
-                            c.setComment_nick_name(object.getString("usernickname"));
-                            c.setComment_floor(object.getString("louhao"));
-                            c.setComment_time(object.getString("addtime"));
-                            cList.add(c);
+                                    c.setComment_head_url(object.getString("userimg"));
+                                    c.setComment_nick_name(object.getString("usernickname"));
+                                    c.setComment_floor(object.getString("louhao"));
+                                    c.setComment_time(object.getString("addtime"));
+                                    cList.add(c);
 
-                        } else if (comment_type.equals("2")) {//商品推荐
-                            String comment_json = object.getString("commentcontent");
-                            JSONObject object_comment_recommend_products = new JSONObject(comment_json);
-                            c_content.setName(object_comment_recommend_products.getString("name"));
-                            c.setComment_content(c_content);
-                            c.setCommenttype(comment_type);
-                            c.setIssystem(object.getString("issystem"));
+                                } else if (comment_type.equals("2")) {//商品推荐
+                                    String comment_json = object.getString("commentcontent");
+                                    JSONObject object_comment_recommend_products = new JSONObject(comment_json);
+                                    c_content.setName(object_comment_recommend_products.getString("name"));
+                                    c.setComment_content(c_content);
+                                    c.setCommenttype(comment_type);
+                                    c.setIssystem(object.getString("issystem"));
 
-                            c.setComment_head_url(object.getString("userimg"));
-                            c.setComment_nick_name(object.getString("usernickname"));
-                            c.setComment_floor(object.getString("louhao"));
-                            c.setComment_time(object.getString("addtime"));
-                            cList.add(c);
-                        } else if (comment_type.equals("3")) {//送礼物的
-                            String comment_json = object.getString("commentcontent");
-                            JSONObject object_comment = new JSONObject(comment_json);
-                            c_content.setName(object_comment.getString("name").substring(4));//设置礼物名字
-                            c.setComment_content(c_content);
-                            c.setCommenttype(comment_type);
-                            c.setIssystem(object.getString("issystem"));
+                                    c.setComment_head_url(object.getString("userimg"));
+                                    c.setComment_nick_name(object.getString("usernickname"));
+                                    c.setComment_floor(object.getString("louhao"));
+                                    c.setComment_time(object.getString("addtime"));
+                                    cList.add(c);
+                                } else if (comment_type.equals("3")) {//送礼物的
+                                    String comment_json = object.getString("commentcontent");
+                                    JSONObject object_comment = new JSONObject(comment_json);
+                                    c_content.setName(object_comment.getString("name").substring(4));//设置礼物名字
+                                    c.setComment_content(c_content);
+                                    c.setCommenttype(comment_type);
+                                    c.setIssystem(object.getString("issystem"));
 
-                            c.setComment_head_url(object.getString("userimg"));
-                            c.setComment_nick_name(object.getString("usernickname"));
-                            c.setComment_floor(object.getString("louhao"));
-                            c.setComment_time(object.getString("addtime"));
-                            cList.add(c);
+                                    c.setComment_head_url(object.getString("userimg"));
+                                    c.setComment_nick_name(object.getString("usernickname"));
+                                    c.setComment_floor(object.getString("louhao"));
+                                    c.setComment_time(object.getString("addtime"));
+                                    cList.add(c);
 
-                        } else if (comment_type.equals("4")) {//购买
-                            String comment_json = object.getString("commentcontent");
-                            JSONObject object_comment_products = new JSONObject(comment_json);
-                            c_content.setName(object_comment_products.getString("name"));//设置购买商品的名字
-                            c.setComment_content(c_content);
-                            c.setCommenttype(comment_type);
-                            c.setIssystem(object.getString("issystem"));
+                                } else if (comment_type.equals("4")) {//购买
+                                    String comment_json = object.getString("commentcontent");
+                                    JSONObject object_comment_products = new JSONObject(comment_json);
+                                    c_content.setName(object_comment_products.getString("name"));//设置购买商品的名字
+                                    c.setComment_content(c_content);
+                                    c.setCommenttype(comment_type);
+                                    c.setIssystem(object.getString("issystem"));
 
-                            c.setComment_head_url(object.getString("userimg"));
-                            c.setComment_nick_name(object.getString("usernickname"));
-                            c.setComment_floor(object.getString("louhao"));
-                            c.setComment_time(object.getString("addtime"));
-                            cList.add(c);
-                        } else {
-                            //这个评论不添加到集合里面去
+                                    c.setComment_head_url(object.getString("userimg"));
+                                    c.setComment_nick_name(object.getString("usernickname"));
+                                    c.setComment_floor(object.getString("louhao"));
+                                    c.setComment_time(object.getString("addtime"));
+                                    cList.add(c);
+                                } else {
+                                    //这个评论不添加到集合里面去
 
+                                }
+                            }
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        } finally {
+                            lastSize = cList.size();
                         }
                     }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                } finally {
-                    lastSize = cList.size();
                 }
-            }
+
+                @Override
+                public void onFailed(String error) {
+                    Log.i(TAG, "onFailed: "+error);
+                }
+            });
             return cList;
         }
 
@@ -970,8 +990,8 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private void postToServer() {
         int recordTime = (int) mCountTimeView.getTotalTime();
         if (!isCount && (recordTime >= 300)) {
-            // 记次失败后的五次重新记次如果没成功，就停止推流
-            if (recordTime > 600) {
+            // 记次失后的五次重新记次如果没成功，就停止推流
+            if (recordTime > 600) {//memberlevelId<3
                 //如果到10分钟还没记次成功就强制停止推流
                 Message msg = Message.obtain();
                 msg.arg1 = 16;
@@ -1000,10 +1020,10 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             }
         }
     }
-
+    private int stateCode;
     class RequestTask extends AsyncTask<String, Void, Integer> {
         public Map<String, String> requestParams;
-        int stateCode = 0;
+
 
         public RequestTask(Map<String, String> params) {
             this.requestParams = params;
@@ -1011,14 +1031,22 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
 
         @Override
         protected Integer doInBackground(String... params) {
-            String post = HttpUtils.post(params[0], requestParams);
-            try {
-                JSONObject object = new JSONObject(post);
-                stateCode = object.getInt("response");
-                Logger.t(TAG).d("stateCode" + stateCode);
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
+            HttpUtils.post(params[0], requestParams, new HttpUtils.NetWorkStatus() {
+                @Override
+                public void onSuccessful(String response) {
+                    try {
+                        JSONObject object = new JSONObject(response);
+                        stateCode = object.getInt("response");
+                        Logger.t(TAG).d("stateCode" + stateCode);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+                @Override
+                public void onFailed(String error) {
+
+                }
+            });
             return stateCode;
         }
 
@@ -1335,30 +1363,27 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private AlivcEventResponse mAudioCaptureSuccRes = new AlivcEventResponse() {
         @Override
         public void onEvent(AlivcEvent event) {
-//            Log.d(TAG, "event->audio recorder start success");
-//            addView(new TextView(LiveCameraActivity.this),"音频开始成功");
+            //成功打开音频
         }
     };
 
     private AlivcEventResponse mVideoEncoderSuccRes = new AlivcEventResponse() {
         @Override
         public void onEvent(AlivcEvent event) {
-//            Log.d(TAG, "event->video encoder start success");
-//            addView(new TextView(LiveCameraActivity.this),"视频开始成功");
+            //成功打开视频
 
         }
     };
     private AlivcEventResponse mVideoEncoderFailedRes = new AlivcEventResponse() {
         @Override
         public void onEvent(AlivcEvent event) {
-//            Log.d(TAG, "event->video encoder start failed");
-//            addView(new TextView(LiveCameraActivity.this),"视频编码失败");
+            //视频编码失败
         }
     };
     private AlivcEventResponse mVideoEncodeFrameFailedRes = new AlivcEventResponse() {
         @Override
         public void onEvent(AlivcEvent event) {
-//            Log.d(TAG, "event->video encode frame failed");
+            //视频帧编码失败
         }
     };
 
@@ -1366,7 +1391,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private AlivcEventResponse mInitDoneRes = new AlivcEventResponse() {
         @Override
         public void onEvent(AlivcEvent event) {
-//            Log.d(TAG, "event->live recorder initialize completely");
+            //直播录制初始化完成
         }
     };
 
@@ -1385,15 +1410,14 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private AlivcEventResponse mAudioCaptureOpenFailedRes = new AlivcEventResponse() {
         @Override
         public void onEvent(AlivcEvent event) {
-//            Log.d(TAG, "event-> audio capture device open failed");
-//            addView(new TextView(LiveCameraActivity.this), "音频捕捉设备打开失败");
+            //音频捕捉设备打开失败
         }
     };
 
     private AlivcEventResponse mAudioEncodeFrameFailedRes = new AlivcEventResponse() {
         @Override
         public void onEvent(AlivcEvent event) {
-//            Log.d(TAG, "event-> audio encode frame failed");
+            //音频编码失败
         }
     };
 
@@ -1416,13 +1440,14 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
 
     private void showPopPro() {
         push_state_ll.setVisibility(View.INVISIBLE);
-        LayoutInflater inflater = LayoutInflater.from(this);
-        View pop_products_layout = inflater.inflate(R.layout.pop_pro_layout, null);
-        pop_products = new PopupWindow(pop_products_layout,WindowManager.LayoutParams.WRAP_CONTENT,WindowManager.LayoutParams.WRAP_CONTENT);
-        pop_products.setFocusable(true);
-        pop_products.setBackgroundDrawable(new ColorDrawable());
-        pop_products.setOutsideTouchable(true);
-        pop_products.setAnimationStyle(R.style.AnimationFade);
+        View pop_products_layout = LayoutInflater.from(this).inflate(R.layout.pop_pro_layout, null);
+        pop_products =new CustomPopupWindow.Builder(this)
+                .setView(pop_products_layout)
+                .setWidthAndHeight(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT)
+                .setOutsideTouchable(true)
+                .setAnimationStyle(R.style.AnimationFade)
+                .create();
+
         pop_products.setOnDismissListener(new PopupWindow.OnDismissListener() {
             @Override
             public void onDismiss() {
@@ -1431,58 +1456,53 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             }
         });
         pop_products_listview = (ListView) pop_products_layout.findViewById(R.id.lv_pop_products);
-
         Map<String, String> params = new HashMap<String, String>();
         params.put("liveid", mShareInfo.getLiveId());
         params.put("op", "goods");
-
         ProductsAdapter productsAdapter = new ProductsAdapter(pList, this, eventUrl + "applogin", params);
         pop_products_listview.setAdapter(productsAdapter);
-
-        View ll = inflater.inflate(R.layout.activity_live_camera, null);
+        View ll = LayoutInflater.from(this).inflate(R.layout.activity_live_camera, null);
         pop_products.showAtLocation(ll, Gravity.LEFT, 0, 0);
-
         pop_products_layout.findViewById(R.id.c_pop_pro_empty_tip).setVisibility(pList.size() > 0 ? View.GONE : View.VISIBLE);
     }
 
     private int measuredWidth = 0;
     private int measureHeight = 0;
-
     private void showSettingPop() {
-        if (mPop_settings == null) {
-            View view = LayoutInflater.from(this).inflate(R.layout.pop_settings_layout, null);
-            mPop_settings = new PopupWindow(view, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
-            mPop_settings.setFocusable(true);
-            mPop_settings.setBackgroundDrawable(new BitmapDrawable());
-            mPop_settings.setOutsideTouchable(true);
-            mPop_settings.setAnimationStyle(R.style.SettingsAnimation);
-            mPop_settings.getContentView().measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-            measureHeight = mPop_settings.getContentView().getMeasuredHeight();
-            measuredWidth = mPop_settings.getContentView().getMeasuredWidth();
-            mPop_settings.showAsDropDown(settings, -measuredWidth, -(settings.getHeight() + measureHeight + 1));
+            if (mPop_settings == null) {
+                View view = LayoutInflater.from(this).inflate(R.layout.pop_settings_layout, null);
+                mPop_settings = new PopupWindow(view, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
+                mPop_settings.setFocusable(true);
+                mPop_settings.setBackgroundDrawable(new BitmapDrawable());
+                mPop_settings.setOutsideTouchable(true);
+                mPop_settings.setAnimationStyle(R.style.SettingsAnimation);
+                mPop_settings.getContentView().measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+                measureHeight = mPop_settings.getContentView().getMeasuredHeight();
+                measuredWidth = mPop_settings.getContentView().getMeasuredWidth();
+                mPop_settings.showAsDropDown(settings, -measuredWidth, -(settings.getHeight() + measureHeight + 1));
 
-            mLl_share = (LinearLayout) view.findViewById(R.id.ll_share);
-            mLl_share.setOnClickListener(this);
-            mLl_camera = (LinearLayout) view.findViewById(ll_camera);
-            mLl_camera.setOnClickListener(this);
-            mLl_sound = (LinearLayout) view.findViewById(R.id.ll_sound);
-            mLl_sound.setOnClickListener(this);
-            mLl_beauty = (LinearLayout) view.findViewById(R.id.ll_beauty);
-            mLl_beauty.setOnClickListener(this);
-            mLl_flash = (LinearLayout) view.findViewById(R.id.ll_flash);
-            mLl_flash.setOnClickListener(this);
-            tv_sound = (TextView) view.findViewById(R.id.tv_sound_text);
-            iv_sound = (ImageView) view.findViewById(R.id.iv_sound_icon);
-            iv_sound.setImageResource(R.drawable.button_volume_on);
-            tv_beauty = (TextView) view.findViewById(R.id.tv_beauty_text);
-            iv_beauty = (ImageView) view.findViewById(R.id.iv_beauty_icon);
-            iv_beauty.setImageResource(R.drawable.no_beauty);
-            iv_flash = (ImageView) view.findViewById(R.id.iv_flash_icon);
-            tv_flash = (TextView) view.findViewById(R.id.tv_flash_text);
-            iv_flash.setImageResource(R.drawable.button_light_off);
-        } else {
-            mPop_settings.showAsDropDown(settings, -measuredWidth, -(settings.getHeight() + measureHeight + 1));
-        }
+                mLl_share = (LinearLayout) view.findViewById(R.id.ll_share);
+                mLl_share.setOnClickListener(this);
+                mLl_camera = (LinearLayout) view.findViewById(ll_camera);
+                mLl_camera.setOnClickListener(this);
+                mLl_sound = (LinearLayout) view.findViewById(R.id.ll_sound);
+                mLl_sound.setOnClickListener(this);
+                mLl_beauty = (LinearLayout) view.findViewById(R.id.ll_beauty);
+                mLl_beauty.setOnClickListener(this);
+                mLl_flash = (LinearLayout) view.findViewById(R.id.ll_flash);
+                mLl_flash.setOnClickListener(this);
+                tv_sound = (TextView) view.findViewById(R.id.tv_sound_text);
+                iv_sound = (ImageView) view.findViewById(R.id.iv_sound_icon);
+                iv_sound.setImageResource(R.drawable.button_volume_on);
+                tv_beauty = (TextView) view.findViewById(R.id.tv_beauty_text);
+                iv_beauty = (ImageView) view.findViewById(R.id.iv_beauty_icon);
+                iv_beauty.setImageResource(R.drawable.no_beauty);
+                iv_flash = (ImageView) view.findViewById(R.id.iv_flash_icon);
+                tv_flash = (TextView) view.findViewById(R.id.tv_flash_text);
+                iv_flash.setImageResource(R.drawable.button_light_off);
+            } else {
+                mPop_settings.showAsDropDown(settings, -measuredWidth, -(settings.getHeight() + measureHeight + 1));
+            }
     }
 
     private void showPopTalk() {
@@ -1496,18 +1516,26 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     }
 
     public void showSharePop() {
-        LayoutInflater inflater = LayoutInflater.from(this);
-        View shareView = inflater.inflate(R.layout.pop_camera_share_layout, null);
-        mSharePopupWindow = new PopupWindow(shareView, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
-        mSharePopupWindow.setFocusable(true);
-        mSharePopupWindow.setBackgroundDrawable(new BitmapDrawable());
-        mSharePopupWindow.setOutsideTouchable(true);
-        mSharePopupWindow.setAnimationStyle(R.style.Settings_share_animation);
+        mSharePopupWindow=new CustomPopupWindow.Builder(this)
+                .setView(R.layout.pop_camera_share_layout)
+                .setWidthAndHeight(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT)
+                .setAnimationStyle(R.style.Settings_share_animation)
+                .setOutsideTouchable(true)
+                .setViewOnclickListener(this)
+                .create();
         mSharePopupWindow.getContentView().measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-        int measuredHeights = mSharePopupWindow.getContentView().getMeasuredHeight();
         int measuredWidths = mSharePopupWindow.getContentView().getMeasuredWidth();
         mSharePopupWindow.showAsDropDown(settings, -(measuredWidth + measuredWidths + 30), -(settings.getHeight() + measureHeight));
-        shareView.findViewById(R.id.c_ll_share_wx).setOnClickListener(this);
-        shareView.findViewById(R.id.c_ll_share_pyq).setOnClickListener(this);
+
+    }
+
+    @Override
+    public void getChildView(View view, int layoutResId) {
+        switch (layoutResId) {
+            case R.layout.pop_camera_share_layout:
+                view.findViewById(R.id.c_ll_share_wx).setOnClickListener(this);
+                view.findViewById(R.id.c_ll_share_pyq).setOnClickListener(this);
+                break;
+        }
     }
 }

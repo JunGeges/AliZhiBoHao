@@ -56,11 +56,18 @@
 
     </RelativeLayout>
 
-    <WebView
-        android:id="@+id/wv"
+    <FrameLayout
+        android:id="@+id/frame_layout"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@+id/rl_layout"></WebView>
+        android:layout_below="@+id/rl_layout"
+        >
+
+        <WebView
+            android:id="@+id/wv"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+    </FrameLayout>
 
     <ProgressBar
         android:id="@+id/progressBar"

@@ -27,6 +27,11 @@
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
     <uses-permission android:name="android.permission.GET_TASKS"/>
 
+    <!--bugly配置的权限start-->
+    <uses-permission android:name="android.permission.READ_LOGS"/>
+    <!--bugly配置的权限end-->
+
+
     <application
         android:name=".MyApplication"
         android:allowBackup="true"

@@ -15,7 +15,9 @@
 #-keepclassmembers class fqcn.of.javascript.interface.for.webview {
 #   public *;
 #}
+-dontwarn com.tencent.bugly.**
 -dontwarn javax.annotation.**
+-keep public class com.tencent.bugly.**{*;}
 -keep class com.alibaba.**
 -keepclassmembers class com.alibaba.** {
     *;
@@ -34,9 +36,7 @@
 -keepclassmembers class * {
     @com.duanqu.qupai.jni.AccessedByNative *;
 }
--keepclassmembers class * {
-    @com.duanqu.qupai.jni.CalledByNative *;
-}
+-keepclassmembers class * {@com.duanqu.qupai.jni.CalledByNative *;}
 
 -keepclasseswithmembers class * {
     native <methods>;

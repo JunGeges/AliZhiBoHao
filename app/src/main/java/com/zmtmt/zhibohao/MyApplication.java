@@ -9,6 +9,7 @@ import com.bumptech.glide.request.target.ViewTarget;
 import com.duanqu.qupai.jni.ApplicationGlue;
 import com.orhanobut.logger.LogLevel;
 import com.orhanobut.logger.Logger;
+import com.tencent.bugly.crashreport.CrashReport;
 import com.tencent.mm.sdk.openapi.IWXAPI;
 import com.tencent.mm.sdk.openapi.WXAPIFactory;
 
@@ -42,6 +43,9 @@ public class MyApplication extends Application {
 //        System.loadLibrary("alivc-media-jni");
         System.loadLibrary("qupai-media-jni");
         ApplicationGlue.initialize(this);
+
+        //Bugly SDK初始化
+        CrashReport.initCrashReport(getApplicationContext(), "3080098224", false);
     }
 
     @Override

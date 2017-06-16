@@ -33,6 +33,7 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
     private static final String TAG = "WXEntryActivity";
     private static final int WXSHARE = 2;
     private static final int WXLOGIN = 1;
+    private User user ;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -139,30 +140,39 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
             @Override
             public void run() {
                 super.run();
-                String json = HttpUtils.get(url);
-                try {
-                        WxAccessToken tokens = new WxAccessToken();
-                        JSONObject object = new JSONObject(json);
-                        tokens.setAccess_token(object.getString("access_token"));
-                        tokens.setExpires_in(object.getString("expires_in"));
-                        tokens.setRefresh_token(object.getString("refresh_token"));
-                        tokens.setOpenId(object.getString("openid"));
-                        tokens.setScope(object.getString("scope"));
-                        tokens.setUnionId(object.getString("unionid"));
-                        //获取用户信息
-                        User userInfo = getUserInfo(tokens);
-                        //保存用户logo的url地址 和昵称
-                        Utils.saveToSp(WXEntryActivity.this,"WXUserParams",new String[]{"WXLogoUrl","WXNickName"}, new String[]{userInfo.getHeadImgUrl(), userInfo.getNickName()});
-                        Logger.t(TAG).d("AccessToken" + tokens);
-                        //存unionid
-                        Utils.saveToSp(WXEntryActivity.this, "unionId",new String[]{"unionId"},userInfo.getUnionid());
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
+                HttpUtils.get(url, new HttpUtils.NetWorkStatus() {
+                    @Override
+                    public void onSuccessful(String response) {
+                        try {
+                            WxAccessToken tokens = new WxAccessToken();
+                            JSONObject object = new JSONObject(response);
+                            tokens.setAccess_token(object.getString("access_token"));
+                            tokens.setExpires_in(object.getString("expires_in"));
+                            tokens.setRefresh_token(object.getString("refresh_token"));
+                            tokens.setOpenId(object.getString("openid"));
+                            tokens.setScope(object.getString("scope"));
+                            tokens.setUnionId(object.getString("unionid"));
+                            //获取用户信息
+                            User userInfo = getUserInfo(tokens);
+                            //保存用户logo的url地址 和昵称
+                            Utils.saveToSp(WXEntryActivity.this, "WXUserParams", new String[]{"WXLogoUrl", "WXNickName"}, new String[]{userInfo.getHeadImgUrl(), userInfo.getNickName()});
+                            Logger.t(TAG).d("AccessToken" + tokens);
+                            Log.i(TAG, "onSuccessful: "+tokens);
+                            //存unionid
+                            Utils.saveToSp(WXEntryActivity.this, "unionId", new String[]{"unionId"}, userInfo.getUnionid());
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+
+                    @Override
+                    public void onFailed(String error) {
+
+                    }
+                });
             }
         }.start();
     }
-
     /**
      * 获取用户信息
      *
@@ -170,33 +180,41 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
      */
     public User getUserInfo(WxAccessToken token) {
         String url = "" + MyApplication.URL_USERINFO + "access_token=" + token.getAccess_token() + "&openid=" + token.getOpenId();
-        String json = HttpUtils.get(url);
-
-        if (json != null) {
-            try {
-                JSONObject object = new JSONObject(json);
-                User u = new User();
-                u.setOpenId(object.getString("openid"));
-                u.setNickName(object.getString("nickname"));
-                u.setSex(object.getInt("sex"));
-                u.setProvince(object.getString("province"));
-                u.setCity(object.getString("city"));
-                u.setCountry(object.getString("country"));
-                u.setHeadImgUrl(object.getString("headimgurl"));
-                JSONArray array = object.getJSONArray("privilege");
-                String[] privilege = {};
-                for (int i = 0; i < array.length(); i++) {
-                    privilege[0] = array.getJSONObject(0).toString();
-                    privilege[1] = array.getJSONObject(1).toString();
+        HttpUtils.get(url, new HttpUtils.NetWorkStatus() {
+            @Override
+            public void onSuccessful(String response) {
+                if (response != null) {
+                    try {
+                        user=new User();
+                        JSONObject object = new JSONObject(response);
+                        user.setOpenId(object.getString("openid"));
+                        user.setNickName(object.getString("nickname"));
+                        user.setSex(object.getInt("sex"));
+                        user.setProvince(object.getString("province"));
+                        user.setCity(object.getString("city"));
+                        user.setCountry(object.getString("country"));
+                        user.setHeadImgUrl(object.getString("headimgurl"));
+                        JSONArray array = object.getJSONArray("privilege");
+                        String[] privilege = {};
+                        for (int i = 0; i < array.length(); i++) {
+                            privilege[0] = array.getJSONObject(0).toString();
+                            privilege[1] = array.getJSONObject(1).toString();
+                        }
+                        user.setPrivilege(privilege);
+                        user.setUnionid(object.getString("unionid"));
+                        Logger.t(TAG).d("UserInfo" + user);
+                        Log.i(TAG, "UserInfo: "+user);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
                 }
-                u.setPrivilege(privilege);
-                u.setUnionid(object.getString("unionid"));
-                Logger.t(TAG).d("UserInfo" + u);
-                return u;
-            } catch (JSONException e) {
-                e.printStackTrace();
             }
-        }
-        return null;
+
+            @Override
+            public void onFailed(String error) {
+
+            }
+        });
+        return user;
     }
 }
