@@ -2,6 +2,7 @@ package com.zmtmt.zhibohao;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
@@ -12,6 +13,7 @@ import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
 import com.zmtmt.zhibohao.entity.ShareInfo;
+import com.zmtmt.zhibohao.tools.HttpUtils;
 import com.zmtmt.zhibohao.tools.ShareUtils;
 
 import de.hdodenhof.circleimageview.CircleImageView;
@@ -26,6 +28,7 @@ public class endActivity extends AppCompatActivity implements View.OnClickListen
     private long mLiveTime;
     private String mLivePersons;
     private CircleImageView mCircleImageView;
+    private Bitmap mBitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +43,14 @@ public class endActivity extends AppCompatActivity implements View.OnClickListen
         mLiveTime = intent.getLongExtra("livetime", 0);
         mLivePersons = intent.getStringExtra("livepersons");
         mShareInfo = intent.getParcelableExtra("shareinfo");
+//        Log.i("ImgUrl", mShareInfo.getImgUrl());
+        //获取分享缩略图
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                mBitmap = HttpUtils.getBitmapByUrl(mShareInfo.getImgUrl());
+            }
+        }).start();
     }
 
     private void initViews() {
@@ -97,11 +108,11 @@ public class endActivity extends AppCompatActivity implements View.OnClickListen
                 break;
 
             case R.id.end_iv_wx:
-                ShareUtils.shareToWX(mShareInfo, WXSceneSession);
+                ShareUtils.shareToWX(mShareInfo, WXSceneSession,mBitmap);
                 break;
 
             case R.id.end_iv_pyq:
-                ShareUtils.shareToWX(mShareInfo, WXSceneTimeline);
+                ShareUtils.shareToWX(mShareInfo, WXSceneTimeline,mBitmap);
                 break;
         }
     }

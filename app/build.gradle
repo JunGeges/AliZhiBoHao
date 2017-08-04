@@ -52,7 +52,7 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile files('libs/libammsdk.jar')
     compile files('libs/alivc-live-record-v1.2.0.jar')
-    compile 'com.android.support:appcompat-v7:23.4.0'
+    compile 'com.android.support:appcompat-v7:23.2.0'
     compile 'com.android.support:cardview-v7:23.2.1'
 
     compile 'com.orhanobut:logger:1.15'

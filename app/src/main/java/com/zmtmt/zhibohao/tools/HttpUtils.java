@@ -21,9 +21,9 @@ import java.util.Map;
 public class HttpUtils {
     //网络请求返回json  GET
     @Nullable //表示定义的字段可以为空
-    public static void get(String url,NetWorkStatus netWorkStatus) {
+    public static void get(String url, NetWorkStatus netWorkStatus) {
         BufferedReader bufferedReader = null;
-        HttpURLConnection connection=null;
+        HttpURLConnection connection = null;
         try {
             URL urls = new URL(url);
             connection = (HttpURLConnection) urls.openConnection();
@@ -50,14 +50,14 @@ public class HttpUtils {
             } catch (IOException e) {
                 e.printStackTrace();
             }
-            if(connection!=null){
+            if (connection != null) {
                 connection.disconnect();
             }
         }
     }
 
     //网络请求 POST
-    public static void post(String url, Map<String, String> params,NetWorkStatus netWorkStatus) {
+    public static void post(String url, Map<String, String> params, NetWorkStatus netWorkStatus) {
         BufferedReader bufferedReader = null;
         HttpURLConnection conn = null;
         try {
@@ -89,7 +89,7 @@ public class HttpUtils {
                 while ((response = bufferedReader.readLine()) != null) {
                     sb.append(response);
                 }
-                netWorkStatus.onSuccessful(response);
+                netWorkStatus.onSuccessful(sb.toString());
             }
         } catch (MalformedURLException e) {
             netWorkStatus.onFailed(e.toString());
@@ -115,7 +115,7 @@ public class HttpUtils {
      * @param url 请求的url地址
      * @return 返回的流转换为Bitmap对象
      */
-    public static Bitmap getBitmapByUrl(String url) {
+    public static Bitmap getBitmapByUrl (String url) {
         Bitmap bitmap = null;
         try {
             URL urls = new URL(url);
@@ -135,8 +135,9 @@ public class HttpUtils {
         return null;
     }
 
-    public interface NetWorkStatus{
+    public interface NetWorkStatus {
         void onSuccessful(String response);
+
         void onFailed(String error);
     }
 }

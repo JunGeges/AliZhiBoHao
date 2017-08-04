@@ -17,6 +17,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
@@ -51,9 +52,7 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
         Logger.t(TAG).d("onCreate");
         setContentView(R.layout.activity_index);
         MyApplication.list.add(this);
-        if (savedInstanceState == null) {
-            checkVersion();
-        }
+        checkVersion();
         initView();
     }
 
@@ -64,7 +63,7 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
     }
 
     private void initView() {
-        mProtocol = (TextView)findViewById(R.id.tv_protocol);
+        mProtocol = (TextView) findViewById(R.id.tv_protocol);
         mProtocol.setOnClickListener(this);
         btn_login = (Button) findViewById(R.id.btn_wx_login);
         surfaceView = (SurfaceView) findViewById(R.id.index_surfaceView);
@@ -122,22 +121,21 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
 
     @Override
     public void onClick(View view) {
-        int viewId = view.getId();
-        switch (viewId) {
+        switch (view.getId()) {
             case R.id.btn_wx_login:
-                if(MyApplication.isInstallWx){
+                if (MyApplication.isInstallWx) {
                     btn_login.setText("正在登录...");
                     SendAuth.Req req = new SendAuth.Req();
                     req.scope = "snsapi_userinfo";
                     req.state = "wechat_sdk_demo_test";
                     boolean isSucceed = MyApplication.api.sendReq(req);
-                }else {
-                    Utils.showToast(getApplicationContext(),"您还没安装微信，请安装后重试！");
+                } else {
+                    Utils.showToast(getApplicationContext(), "您还没安装微信，请安装后重试！");
                 }
                 break;
 
             case R.id.tv_protocol:
-                Intent intent=new Intent(IndexActivity.this,ProtocolActivity.class);
+                Intent intent = new Intent(IndexActivity.this, ProtocolActivity.class);
                 startActivity(intent);
                 break;
         }
@@ -148,7 +146,9 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
         super.onStop();
         btn_login.setText("微信授权登录");
     }
-    String str;
+
+    private String strResponse;
+
     //以下针对更新升级
     private void checkVersion() {
         new UpdateVersionTask().execute(UPGRADE_URL);
@@ -164,7 +164,7 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
             HttpUtils.get(strings[0], new HttpUtils.NetWorkStatus() {
                 @Override
                 public void onSuccessful(String response) {
-                     str=response;
+                    strResponse = response;
                 }
 
                 @Override
@@ -172,7 +172,7 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
 
                 }
             });
-            return str;
+            return strResponse;
         }
 
         @Override
@@ -184,7 +184,7 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
                     JSONObject object = new JSONObject(s);
                     versionCode = object.getInt("versionCode");
                     url = object.getString("url");
-                    Logger.t(TAG).d("版本升级地址:"+url);
+                    Log.i(TAG, "onPostExecute: " + object.toString());
                     hasVersionCode = true;
                 }
             } catch (JSONException ignored) {
@@ -194,11 +194,11 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
 
             if (hasVersionCode && BuildConfig.VERSION_CODE < versionCode) {
                 AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(IndexActivity.this);
-                alertDialogBuilder.setCancelable(false);
-                alertDialog = alertDialogBuilder.setTitle("版本升级")
-                        .setMessage("您当前使用的应用已不是最新版本，请升级到最新版本。")
-                        .setPositiveButton(android.R.string.ok, null)
-                        .setNegativeButton(android.R.string.cancel, null)
+                alertDialogBuilder.setCancelable(true);
+                alertDialog = alertDialogBuilder.setTitle("检测到新版本")
+                        .setMessage("v2.3.1 新版上线!\n-修复某情况导致推流异常退出bug\n-修复微信分享缩略图显示bug")
+                        .setPositiveButton("抢先体验", null)
+                        .setNegativeButton("遗憾错过", null)
                         .create();
                 alertDialog.setOnShowListener(new DialogInterface.OnShowListener() {
                     @Override

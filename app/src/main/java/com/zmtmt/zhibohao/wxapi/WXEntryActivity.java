@@ -39,7 +39,6 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.wx_activity_layout);
-        Logger.t(TAG).d("onCreate");
         MyApplication.api.handleIntent(getIntent(), this);
     }
 

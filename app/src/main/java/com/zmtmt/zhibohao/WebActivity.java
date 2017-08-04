@@ -113,6 +113,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     private CustomPopupWindow mCustomPopupWindow_logff;
     private CustomPopupWindow mCustomPopupWindow_option;
     private CustomPopupWindow mCustomPopupWindow_share;
+    private Bitmap mBitmap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -125,8 +126,10 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if (mCustomPopupWindow_logff != null && mCustomPopupWindow_logff.isShowing()) mCustomPopupWindow_logff.dismiss();
-        if(mCustomPopupWindow_option!=null&&mCustomPopupWindow_option.isShowing())mCustomPopupWindow_option.dismiss();
+        if (mCustomPopupWindow_logff != null && mCustomPopupWindow_logff.isShowing())
+            mCustomPopupWindow_logff.dismiss();
+        if (mCustomPopupWindow_option != null && mCustomPopupWindow_option.isShowing())
+            mCustomPopupWindow_option.dismiss();
     }
 
     private void initViews() {
@@ -238,7 +241,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
 
             case R.id.ll__share_circle:
                 if (sList.size() != 0) {
-                    ShareUtils.shareToWX(shareInfo, WXSCENETIMELINE);
+                    ShareUtils.shareToWX(shareInfo, WXSCENETIMELINE,mBitmap);
                 } else {
                     Utils.showToast(WebActivity.this, getString(R.string.w_shareTip));
                 }
@@ -246,7 +249,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
 
             case R.id.ll_share_friend:
                 if (sList.size() != 0) {
-                    ShareUtils.shareToWX(shareInfo, WXSCENESESSION);
+                    ShareUtils.shareToWX(shareInfo, WXSCENESESSION,mBitmap);
                 } else {
                     Utils.showToast(WebActivity.this, getString(R.string.w_shareTip));
                 }
@@ -562,6 +565,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     public class JsToJava {
         /***
          * @param s liveid
+         * 自己做直播调用的
          */
         @JavascriptInterface
         public void openCamera(String s) {
@@ -578,6 +582,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
 //            Logger.t(TAG).d(shareInfo);
         }
 
+        //别人邀约做直播调用
         @JavascriptInterface
         public void openCamera(String liveId, String json) {
             //清空自己的直播间的商品
@@ -660,13 +665,24 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         @JavascriptInterface
         public void setShare(String json) {
             try {
-                JSONObject object = new JSONObject(json);
+                final JSONObject object = new JSONObject(json);
                 shareInfo = new ShareInfo();
                 shareInfo.setTitle(object.getString("title"));
                 shareInfo.setDesc(object.getString("desc"));
                 shareInfo.setLink(object.getString("link"));
                 shareInfo.setImgUrl(object.getString("imgUrl"));
                 sList.add(shareInfo);
+                //获取分享缩略图
+                new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        try {
+                            mBitmap = HttpUtils.getBitmapByUrl(object.getString("imgUrl"));
+                        } catch (JSONException e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }).start();
             } catch (JSONException e) {
                 e.printStackTrace();
             }

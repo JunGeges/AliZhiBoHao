@@ -129,12 +129,12 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         pickDirectory.setOnClickListener(this);
 
         mSeekBarlv = (TextView) findViewById(R.id.tv_mlv);
-        mSeekBarlv.setText("(1200)");
+        mSeekBarlv.setText("(1000)");
         zhenSeekBarlv = (TextView) findViewById(R.id.tv_zhenlv);
         zhenSeekBarlv.setText("(30)");
 
         sb_mlv = (SeekBar) findViewById(R.id.sb_mlv);
-        sb_mlv.setProgress(1200);
+        sb_mlv.setProgress(1000);
 
         sb_zlv = (SeekBar) findViewById(R.id.sb_zlv);
         sb_zlv.setProgress(30);
@@ -199,14 +199,14 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         switch (checkedRadioButtonId) {
             case R.id.radio_smooth_definition:
                 //360p
-                mSeekBarlv.setText(600 + "");
-                sb_mlv.setProgress(600);
-                zhenSeekBarlv.setText("(25)");
-                sb_zlv.setProgress(25);
-                initBitrate = 600;
-                bestBitrate = 600;
-                maxBitrate = 800;
-                frameRate = 25;
+                mSeekBarlv.setText(440 + "");
+                sb_mlv.setProgress(440);
+                zhenSeekBarlv.setText("(20)");
+                sb_zlv.setProgress(20);
+                initBitrate = 440;
+                bestBitrate = 440;
+                maxBitrate = 500;
+                frameRate = 20;
                 resolution360button.setBackgroundResource(R.drawable.push_params_set_click_btn);
                 resolution480button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
                 resolution720button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
@@ -229,13 +229,13 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                 break;
             case R.id.radio_super_definition:
                 //720p
-                mSeekBarlv.setText(1800 + "");
-                sb_mlv.setProgress(1800);
+                mSeekBarlv.setText(1200 + "");
+                sb_mlv.setProgress(1200);
                 zhenSeekBarlv.setText("(30)");
                 sb_zlv.setProgress(30);
-                initBitrate = 1800;
-                bestBitrate = 1800;
-                maxBitrate = 2500;
+                initBitrate = 1200;
+                bestBitrate = 1200;
+                maxBitrate = 1400;
                 frameRate = 30;
                 resolution360button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
                 resolution480button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
@@ -244,12 +244,12 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                 break;
             case R.id.radio_high_definition:
                 //540p
-                mSeekBarlv.setText(1200 + "");
-                sb_mlv.setProgress(1200);
+                mSeekBarlv.setText(1000 + "");
+                sb_mlv.setProgress(1000);
                 zhenSeekBarlv.setText("(30)");
                 sb_zlv.setProgress(30);
-                initBitrate = 1200;
-                bestBitrate = 1500;
+                initBitrate = 1000;
+                bestBitrate = 1200;
                 frameRate = 30;
                 resolution360button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
                 resolution480button.setBackgroundResource(R.drawable.push_params_set_normal_btn);
@@ -464,7 +464,7 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         intent.putExtra("outputY", 50);
         // 图片格式
         /* intent.putExtra("outputFormat", "JPEG"); */
-        intent.putExtra("outputFormat", Bitmap.CompressFormat.JPEG.toString());
+        intent.putExtra("outputFormat", Bitmap.CompressFormat.PNG.toString());
         // intent.putExtra("noFaceDetection", true);// 取消人脸识别
         intent.putExtra("return-data", true);// true:返回uri，false：不返回uri
         // 同一个地址下 裁剪的图片覆盖拍照的图片

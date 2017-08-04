@@ -10,6 +10,7 @@ import android.content.SharedPreferences;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
+import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.drawable.BitmapDrawable;
 import android.os.AsyncTask;
@@ -80,13 +81,14 @@ import de.hdodenhof.circleimageview.CircleImageView;
 
 import static com.zmtmt.zhibohao.R.id.ll_camera;
 
-public class LiveCameraActivity extends Activity implements View.OnClickListener, View.OnTouchListener,CustomPopupWindow.ViewInterface {
+public class LiveCameraActivity extends Activity implements View.OnClickListener, View.OnTouchListener, CustomPopupWindow.ViewInterface {
 
     private PopupWindow mPop_settings;
     private LinearLayout mLl_share;
     private PopupWindow mSharePopupWindow;
     private int mCurrFacing;
     private int mScaledTouchSlop;
+    private CommentAdapter commentAdapter;
 
     public static class RequestBuilder {
         String rtmpUrl;
@@ -326,6 +328,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private int slideDownX;
     private int slideUpX;
     private RelativeLayout mRelativeLayout;
+    private Bitmap mBitmap;
 
     public static void startActivity(Context context,
                                      RequestBuilder builder) {
@@ -364,7 +367,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         mMediaRecorder.setOnRecordErrorListener(mOnErrorListener);
 
         mConfigure.put(AlivcMediaFormat.KEY_CAMERA_FACING, cameraFrontFacing);
-        mConfigure.put(AlivcMediaFormat.KEY_I_FRAME_INTERNAL, 2);
+        mConfigure.put(AlivcMediaFormat.KEY_I_FRAME_INTERNAL, 3);
         mConfigure.put(AlivcMediaFormat.KEY_MAX_ZOOM_LEVEL, 3);
         mConfigure.put(AlivcMediaFormat.KEY_OUTPUT_RESOLUTION, resolution);
         mConfigure.put(AlivcMediaFormat.KEY_MAX_VIDEO_BITRATE, maxBitrate * 1000);
@@ -385,7 +388,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             public void run() {
                 View pop_talk_view = LayoutInflater.from(LiveCameraActivity.this).inflate(R.layout.pop_talk_layout, null);
                 c_pop_talk_empty_tip = pop_talk_view.findViewById(R.id.c_pop_talk_empty_tip);
-                pop_comment=new CustomPopupWindow.Builder(LiveCameraActivity.this)
+                pop_comment = new CustomPopupWindow.Builder(LiveCameraActivity.this)
                         .setView(pop_talk_view)
                         .setWidthAndHeight(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT)
                         .setOutsideTouchable(true)
@@ -509,13 +512,13 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                 break;
 
             case R.id.c_ll_share_wx:
-                ShareUtils.shareToWX(mShareInfo, 2);
+                ShareUtils.shareToWX(mShareInfo, 2, mBitmap);
                 if (mPop_settings != null) mPop_settings.dismiss();
                 if (mSharePopupWindow != null) mSharePopupWindow.dismiss();
                 break;
 
             case R.id.c_ll_share_pyq:
-                ShareUtils.shareToWX(mShareInfo, 1);
+                ShareUtils.shareToWX(mShareInfo, 1,mBitmap);
                 if (mPop_settings != null) mPop_settings.dismiss();
                 if (mSharePopupWindow != null) mSharePopupWindow.dismiss();
                 break;
@@ -625,6 +628,13 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             memberlevelId = bundle.getInt(MEMBERLEVEL_ID);
             mShareInfo = bundle.getParcelable(SHARE_INFO);
             openID = bundle.getString(OPEN_ID);
+            //获取分享缩略图
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    mBitmap = HttpUtils.getBitmapByUrl(mShareInfo.getImgUrl());
+                }
+            }).start();
         }
     }
 
@@ -859,6 +869,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                             String isNew = array_1.getString(0);
                             ID = array_1.getString(1);
                             person = array_1.getString(2);
+                            Log.i(TAG, "onSuccessful: " + person);
                             for (int i = 1; i < array.length(); i++) {
                                 final Comment c = new Comment();//评论类
                                 CommentContent c_content = new CommentContent();//评论内容类
@@ -932,7 +943,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
 
                 @Override
                 public void onFailed(String error) {
-                    Log.i(TAG, "onFailed: "+error);
+                    Log.i(TAG, "onFailed: " + error);
                 }
             });
             return cList;
@@ -942,19 +953,22 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         protected void onPostExecute(ArrayList<Comment> comments) {
             c_pop_talk_empty_tip.setVisibility(comments.size() > 0 ? View.GONE : View.VISIBLE);
             //更新在线人数
-            int personFormat = Integer.parseInt(person);
+/*            int personFormat = Integer.parseInt(person);
+            Log.i(TAG, "onPostExecute: " + person);
             if (personFormat >= 10000) {
                 int num = personFormat / 10000;
                 int num2 = personFormat / 1000 % 10;
                 int num3 = personFormat / 100 % 10;
                 person = num + "." + num2 + num3 + "万";
-            }
-            mTv_watch_person.setText(person);
-
-            if (firstSize != lastSize) {
-                CommentAdapter adapter = new CommentAdapter(LiveCameraActivity.this, comments);
-                mListView.setAdapter(adapter);
-                adapter.notifyDataSetChanged();
+            }*/
+                mTv_watch_person.setText(person);
+            if (commentAdapter == null) {
+                commentAdapter = new CommentAdapter(LiveCameraActivity.this, comments);
+                mListView.setAdapter(commentAdapter);
+            } else {
+                if (firstSize != lastSize) {
+                    commentAdapter.notifyDataSetChanged();
+                }
             }
         }
     }
@@ -1011,7 +1025,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             msg.what = UI_EVENT_RECORDER_STOPPED;
             mUIEventHandler.sendMessage(msg);
         } else {
-            if (recordTime >= 14400 && (memberlevelId == 3 || memberlevelId == 5)) {
+            if (recordTime >= 14400 && (memberlevelId > 2)) {//4  不限时3 5
                 Logger.t(TAG).d("超级会员" + memberlevelId);
                 Message msg = Message.obtain();
                 msg.arg1 = 17;
@@ -1020,7 +1034,9 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             }
         }
     }
+
     private int stateCode;
+
     class RequestTask extends AsyncTask<String, Void, Integer> {
         public Map<String, String> requestParams;
 
@@ -1042,6 +1058,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                         e.printStackTrace();
                     }
                 }
+
                 @Override
                 public void onFailed(String error) {
 
@@ -1441,7 +1458,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private void showPopPro() {
         push_state_ll.setVisibility(View.INVISIBLE);
         View pop_products_layout = LayoutInflater.from(this).inflate(R.layout.pop_pro_layout, null);
-        pop_products =new CustomPopupWindow.Builder(this)
+        pop_products = new CustomPopupWindow.Builder(this)
                 .setView(pop_products_layout)
                 .setWidthAndHeight(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT)
                 .setOutsideTouchable(true)
@@ -1468,41 +1485,42 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
 
     private int measuredWidth = 0;
     private int measureHeight = 0;
-    private void showSettingPop() {
-            if (mPop_settings == null) {
-                View view = LayoutInflater.from(this).inflate(R.layout.pop_settings_layout, null);
-                mPop_settings = new PopupWindow(view, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
-                mPop_settings.setFocusable(true);
-                mPop_settings.setBackgroundDrawable(new BitmapDrawable());
-                mPop_settings.setOutsideTouchable(true);
-                mPop_settings.setAnimationStyle(R.style.SettingsAnimation);
-                mPop_settings.getContentView().measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
-                measureHeight = mPop_settings.getContentView().getMeasuredHeight();
-                measuredWidth = mPop_settings.getContentView().getMeasuredWidth();
-                mPop_settings.showAsDropDown(settings, -measuredWidth, -(settings.getHeight() + measureHeight + 1));
 
-                mLl_share = (LinearLayout) view.findViewById(R.id.ll_share);
-                mLl_share.setOnClickListener(this);
-                mLl_camera = (LinearLayout) view.findViewById(ll_camera);
-                mLl_camera.setOnClickListener(this);
-                mLl_sound = (LinearLayout) view.findViewById(R.id.ll_sound);
-                mLl_sound.setOnClickListener(this);
-                mLl_beauty = (LinearLayout) view.findViewById(R.id.ll_beauty);
-                mLl_beauty.setOnClickListener(this);
-                mLl_flash = (LinearLayout) view.findViewById(R.id.ll_flash);
-                mLl_flash.setOnClickListener(this);
-                tv_sound = (TextView) view.findViewById(R.id.tv_sound_text);
-                iv_sound = (ImageView) view.findViewById(R.id.iv_sound_icon);
-                iv_sound.setImageResource(R.drawable.button_volume_on);
-                tv_beauty = (TextView) view.findViewById(R.id.tv_beauty_text);
-                iv_beauty = (ImageView) view.findViewById(R.id.iv_beauty_icon);
-                iv_beauty.setImageResource(R.drawable.no_beauty);
-                iv_flash = (ImageView) view.findViewById(R.id.iv_flash_icon);
-                tv_flash = (TextView) view.findViewById(R.id.tv_flash_text);
-                iv_flash.setImageResource(R.drawable.button_light_off);
-            } else {
-                mPop_settings.showAsDropDown(settings, -measuredWidth, -(settings.getHeight() + measureHeight + 1));
-            }
+    private void showSettingPop() {
+        if (mPop_settings == null) {
+            View view = LayoutInflater.from(this).inflate(R.layout.pop_settings_layout, null);
+            mPop_settings = new PopupWindow(view, WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT);
+            mPop_settings.setFocusable(true);
+            mPop_settings.setBackgroundDrawable(new BitmapDrawable());
+            mPop_settings.setOutsideTouchable(true);
+            mPop_settings.setAnimationStyle(R.style.SettingsAnimation);
+            mPop_settings.getContentView().measure(View.MeasureSpec.UNSPECIFIED, View.MeasureSpec.UNSPECIFIED);
+            measureHeight = mPop_settings.getContentView().getMeasuredHeight();
+            measuredWidth = mPop_settings.getContentView().getMeasuredWidth();
+            mPop_settings.showAsDropDown(settings, -measuredWidth, -(settings.getHeight() + measureHeight + 1));
+
+            mLl_share = (LinearLayout) view.findViewById(R.id.ll_share);
+            mLl_share.setOnClickListener(this);
+            mLl_camera = (LinearLayout) view.findViewById(ll_camera);
+            mLl_camera.setOnClickListener(this);
+            mLl_sound = (LinearLayout) view.findViewById(R.id.ll_sound);
+            mLl_sound.setOnClickListener(this);
+            mLl_beauty = (LinearLayout) view.findViewById(R.id.ll_beauty);
+            mLl_beauty.setOnClickListener(this);
+            mLl_flash = (LinearLayout) view.findViewById(R.id.ll_flash);
+            mLl_flash.setOnClickListener(this);
+            tv_sound = (TextView) view.findViewById(R.id.tv_sound_text);
+            iv_sound = (ImageView) view.findViewById(R.id.iv_sound_icon);
+            iv_sound.setImageResource(R.drawable.button_volume_on);
+            tv_beauty = (TextView) view.findViewById(R.id.tv_beauty_text);
+            iv_beauty = (ImageView) view.findViewById(R.id.iv_beauty_icon);
+            iv_beauty.setImageResource(R.drawable.no_beauty);
+            iv_flash = (ImageView) view.findViewById(R.id.iv_flash_icon);
+            tv_flash = (TextView) view.findViewById(R.id.tv_flash_text);
+            iv_flash.setImageResource(R.drawable.button_light_off);
+        } else {
+            mPop_settings.showAsDropDown(settings, -measuredWidth, -(settings.getHeight() + measureHeight + 1));
+        }
     }
 
     private void showPopTalk() {
@@ -1516,7 +1534,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     }
 
     public void showSharePop() {
-        mSharePopupWindow=new CustomPopupWindow.Builder(this)
+        mSharePopupWindow = new CustomPopupWindow.Builder(this)
                 .setView(R.layout.pop_camera_share_layout)
                 .setWidthAndHeight(WindowManager.LayoutParams.WRAP_CONTENT, WindowManager.LayoutParams.WRAP_CONTENT)
                 .setAnimationStyle(R.style.Settings_share_animation)
