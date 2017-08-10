@@ -1,4 +1,4 @@
-package com.zmtmt.zhibohao;
+package com.zmtmt.zhibohao.activity;
 
 import android.Manifest;
 import android.app.Activity;
@@ -54,16 +54,16 @@ import com.alibaba.livecloud.live.OnNetworkStatusListener;
 import com.alibaba.livecloud.live.OnRecordStatusListener;
 import com.alibaba.livecloud.model.AlivcWatermark;
 import com.bumptech.glide.Glide;
-import com.orhanobut.logger.Logger;
+import com.zmtmt.zhibohao.R;
+import com.zmtmt.zhibohao.adapter.CommentAdapter;
+import com.zmtmt.zhibohao.adapter.ProductsAdapter;
 import com.zmtmt.zhibohao.entity.Comment;
 import com.zmtmt.zhibohao.entity.CommentContent;
 import com.zmtmt.zhibohao.entity.Products;
 import com.zmtmt.zhibohao.entity.ShareInfo;
-import com.zmtmt.zhibohao.tools.CommentAdapter;
+import com.zmtmt.zhibohao.tools.CommonUtils;
 import com.zmtmt.zhibohao.tools.HttpUtils;
-import com.zmtmt.zhibohao.tools.ProductsAdapter;
 import com.zmtmt.zhibohao.tools.ShareUtils;
-import com.zmtmt.zhibohao.tools.Utils;
 import com.zmtmt.zhibohao.widget.CountTimeView;
 import com.zmtmt.zhibohao.widget.CustomPopupWindow;
 
@@ -542,20 +542,20 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private void setFlash() {
         if (!flash_is_open) {
             if (AlivcMediaFormat.CAMERA_FACING_FRONT == mCurrFacing) {
-                Utils.showToast(this, "前置摄像头不支持闪关灯");
+                CommonUtils.showToast(this, "前置摄像头不支持闪关灯");
                 return;
             }
             iv_flash.setImageResource(R.drawable.button_light_on);
             mMediaRecorder.addFlag(AlivcMediaFormat.FLAG_FLASH_MODE_ON);
             tv_flash.setText("关闭闪光");
             flash_is_open = true;
-            Utils.showToast(this, "闪光灯已开启");
+            CommonUtils.showToast(this, "闪光灯已开启");
         } else {
             flash_is_open = false;
             iv_flash.setImageResource(R.drawable.button_light_off);
             mMediaRecorder.removeFlag(AlivcMediaFormat.FLAG_FLASH_MODE_ON);
             tv_flash.setText("开启闪光");
-            Utils.showToast(this, "闪光灯已关闭");
+            CommonUtils.showToast(this, "闪光灯已关闭");
         }
     }
 
@@ -565,13 +565,13 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             tv_beauty.setText("关闭美颜");
             mMediaRecorder.addFlag(AlivcMediaFormat.FLAG_BEAUTY_ON);
             beauty_is_open = true;
-            Utils.showToast(this, "美颜已开启");
+            CommonUtils.showToast(this, "美颜已开启");
         } else {
             iv_beauty.setImageResource(R.drawable.no_beauty);
             tv_beauty.setText("开启美颜");
             mMediaRecorder.removeFlag(AlivcMediaFormat.FLAG_BEAUTY_ON);
             beauty_is_open = false;
-            Utils.showToast(this, "美颜已关闭");
+            CommonUtils.showToast(this, "美颜已关闭");
         }
     }
 
@@ -580,13 +580,13 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             mMediaRecorder.removeFlag(AlivcMediaFormat.FLAG_MUTE_ON);
             iv_sound.setImageResource(R.drawable.button_volume_on);
             tv_sound.setText("静音        ");
-            Utils.showToast(this, "声音已开启");
+            CommonUtils.showToast(this, "声音已开启");
             sound_is_open = true;
         } else {
             mMediaRecorder.addFlag(AlivcMediaFormat.FLAG_MUTE_ON);
             iv_sound.setImageResource(R.drawable.button_volume_off);
             tv_sound.setText("开启声音");
-            Utils.showToast(this, "声音已关闭");
+            CommonUtils.showToast(this, "声音已关闭");
             sound_is_open = false;
         }
     }
@@ -598,7 +598,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                 iv_flash.setImageResource(R.drawable.button_light_off);
                 mMediaRecorder.removeFlag(AlivcMediaFormat.FLAG_FLASH_MODE_ON);
                 tv_flash.setText("开启闪光");
-                Utils.showToast(this, "闪光灯已关闭");
+                CommonUtils.showToast(this, "闪光灯已关闭");
                 flash_is_open = true;
             }
         }
@@ -668,7 +668,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                             toastTip = R.string.no_record_audio_permission;
                         }
                         if (toastTip != 0) {
-                            Utils.showToast(this, toastTip + "");
+                            CommonUtils.showToast(this, toastTip + "");
                             hasPermission = false;
                         }
                     }
@@ -753,7 +753,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                     try {
                         if (isFirstPush) {
                             currentTime = String.valueOf(System.currentTimeMillis() / 1000);
-                            Logger.t(TAG).d("currentTime" + currentTime);
                             isFirstPush = false;
                         }
                         mRecorderButton.setBackgroundResource(R.drawable.ic_video_stop);
@@ -769,7 +768,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                         mCountTimeView.startCountTime();
                         addView(new TextView(LiveCameraActivity.this), getString(R.string.c_pushStream_start));
                     } catch (Exception e) {
-
                     }
                     break;
 
@@ -1019,14 +1017,12 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             task.execute(eventUrl + "liveconsumeajax");
         }
         if (recordTime >= 2700 && (memberlevelId == 0 || memberlevelId == 1 || memberlevelId == 2)) {
-            Logger.t(TAG).d("普通会员" + memberlevelId);
             Message msg = Message.obtain();
             msg.arg1 = 13;
             msg.what = UI_EVENT_RECORDER_STOPPED;
             mUIEventHandler.sendMessage(msg);
         } else {
             if (recordTime >= 14400 && (memberlevelId > 2)) {//4  不限时3 5
-                Logger.t(TAG).d("超级会员" + memberlevelId);
                 Message msg = Message.obtain();
                 msg.arg1 = 17;
                 msg.what = UI_EVENT_RECORDER_STOPPED;
@@ -1053,7 +1049,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                     try {
                         JSONObject object = new JSONObject(response);
                         stateCode = object.getInt("response");
-                        Logger.t(TAG).d("stateCode" + stateCode);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }
@@ -1074,12 +1069,10 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                 //记次成功
                 case 200:
                     isCount = true;
-                    Logger.t(TAG).d(getString(R.string.count_ok));
                     break;
 
                 //号外棒不足
                 case 300:
-                    Logger.t(TAG).d(getString(R.string.insufficient));
                     Message msg_300 = Message.obtain();
                     msg_300.arg1 = 14;
                     msg_300.what = UI_EVENT_RECORDER_STOPPED;
@@ -1088,7 +1081,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
 
                 //会员过期
                 case 301:
-                    Logger.t(TAG).d(getString(R.string.members_expired));
                     Message msg_301 = Message.obtain();
                     msg_301.arg1 = 15;
                     msg_301.what = UI_EVENT_RECORDER_STOPPED;
@@ -1097,12 +1089,10 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
 
                 //非法操作
                 case 400:
-                    Logger.t(TAG).d(getString(R.string.illegal_operation));
                     break;
 
                 //记次失败
                 case 500:
-                    Logger.t(TAG).d(getString(R.string.count_error));
                     isCount = false;
                     break;
             }
@@ -1112,10 +1102,10 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     @Override
     public void onBackPressed() {
         if (isRecording) {
-            Utils.showToast(this, getString(R.string.c_backPressed));
+            CommonUtils.showToast(this, getString(R.string.c_backPressed));
         } else {
             if (mCountTimeView.getTotalTime() > 0) {
-                Intent in = new Intent(this, endActivity.class);
+                Intent in = new Intent(this, EndActivity.class);
                 in.putExtra("livetime", mCountTimeView.getTotalTime());
                 in.putExtra("livepersons", mTv_watch_person.getText().toString().trim());
                 in.putExtra("shareinfo", mShareInfo);
@@ -1264,7 +1254,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
 
         @Override
         public void onIllegalOutputResolution() {
-            Utils.showToast(LiveCameraActivity.this, R.string.illegal_output_resolution + "");
+            CommonUtils.showToast(LiveCameraActivity.this, R.string.illegal_output_resolution + "");
         }
     };
 

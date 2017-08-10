@@ -1,4 +1,4 @@
-package com.zmtmt.zhibohao.tools;
+package com.zmtmt.zhibohao.adapter;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -22,12 +22,10 @@ import java.util.ArrayList;
 public class CommentAdapter extends BaseAdapter {
     private Context context;
     private ArrayList<Comment> cList;
-    private Utils utils;
 
     public CommentAdapter(Context context, ArrayList<Comment> cList) {
         this.context = context;
         this.cList = cList;
-        this.utils = new Utils();
     }
 
     @Override

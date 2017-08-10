@@ -1,4 +1,4 @@
-package com.zmtmt.zhibohao;
+package com.zmtmt.zhibohao.activity;
 
 import android.Manifest;
 import android.animation.Animator;
@@ -33,7 +33,7 @@ import android.widget.Toast;
 
 import com.alibaba.livecloud.live.AlivcMediaFormat;
 import com.alibaba.livecloud.model.AlivcWatermark;
-import com.orhanobut.logger.Logger;
+import com.zmtmt.zhibohao.R;
 import com.zmtmt.zhibohao.entity.Products;
 import com.zmtmt.zhibohao.entity.ShareInfo;
 import com.zmtmt.zhibohao.widget.CustomPopupWindow;
@@ -41,8 +41,6 @@ import com.zmtmt.zhibohao.widget.CustomPopupWindow;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-
-import static com.duanqu.qupai.recorder.RecorderTask.TAG;
 
 public class PushParamsActivity extends Activity implements View.OnClickListener, RadioGroup.OnCheckedChangeListener {
 
@@ -188,7 +186,6 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
         eventUrl = intent.getStringExtra("eventurl");
         openID = intent.getStringExtra("openid");
         memberlevelId = Integer.parseInt(intent.getStringExtra("memberlevelid"));
-        Logger.t(TAG).d(eventUrl + "liveconsumeajax" + pushUrl);
         productList = intent.getParcelableArrayListExtra("products_list");
         mShareInfo = intent.getParcelableExtra("shareinfo");
     }

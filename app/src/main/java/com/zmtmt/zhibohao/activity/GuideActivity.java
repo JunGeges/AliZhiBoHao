@@ -1,4 +1,4 @@
-package com.zmtmt.zhibohao;
+package com.zmtmt.zhibohao.activity;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -8,6 +8,8 @@ import android.os.Handler;
 import android.os.Message;
 import android.text.TextUtils;
 import android.util.Log;
+
+import com.zmtmt.zhibohao.R;
 
 public class GuideActivity extends Activity {
     private static final String TAG = "GuideActivity";

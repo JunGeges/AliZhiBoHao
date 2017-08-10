@@ -4,7 +4,7 @@ import android.content.Context;
 import android.view.View;
 import android.widget.PopupWindow;
 
-import com.zmtmt.zhibohao.tools.Utils;
+import com.zmtmt.zhibohao.tools.CommonUtils;
 
 /**
  * Created by Administrator on 2017/6/15.
@@ -128,7 +128,7 @@ public class CustomPopupWindow extends PopupWindow {
             if (listener != null && params.layoutResId != 0) {
                 listener.getChildView(popupWindow.controller.mPopupView, params.layoutResId);
             }
-            Utils.measureWidthAndHeight(popupWindow.controller.mPopupView);
+            CommonUtils.measureWidthAndHeight(popupWindow.controller.mPopupView);
             return popupWindow;
         }
     }

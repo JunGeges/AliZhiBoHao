@@ -7,7 +7,7 @@
     android:orientation="horizontal"
     android:background="#051E3C"
     android:padding="10dp"
-    tools:context="com.zmtmt.zhibohao.SpeedTestActivity">
+    tools:context="com.zmtmt.zhibohao.activity.SpeedTestActivity">
 
     <WebView
         android:id="@+id/speed_test_wv"

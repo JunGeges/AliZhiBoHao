@@ -1,9 +1,11 @@
-package com.zmtmt.zhibohao;
+package com.zmtmt.zhibohao.activity;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
+
+import com.zmtmt.zhibohao.R;
 
 public class ProtocolActivity extends AppCompatActivity {
 

@@ -1,4 +1,4 @@
-package com.zmtmt.zhibohao;
+package com.zmtmt.zhibohao.activity;
 
 import android.app.DownloadManager;
 import android.content.BroadcastReceiver;
@@ -17,17 +17,18 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-import com.orhanobut.logger.Logger;
 import com.tencent.mm.sdk.modelmsg.SendAuth;
+import com.zmtmt.zhibohao.BuildConfig;
+import com.zmtmt.zhibohao.R;
+import com.zmtmt.zhibohao.app.MyApplication;
+import com.zmtmt.zhibohao.tools.CommonUtils;
 import com.zmtmt.zhibohao.tools.HttpUtils;
-import com.zmtmt.zhibohao.tools.Utils;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -49,7 +50,6 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        Logger.t(TAG).d("onCreate");
         setContentView(R.layout.activity_index);
         MyApplication.list.add(this);
         checkVersion();
@@ -59,7 +59,6 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Logger.t(TAG).d("onDestroy");
     }
 
     private void initView() {
@@ -130,7 +129,7 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
                     req.state = "wechat_sdk_demo_test";
                     boolean isSucceed = MyApplication.api.sendReq(req);
                 } else {
-                    Utils.showToast(getApplicationContext(), "您还没安装微信，请安装后重试！");
+                    CommonUtils.showToast(getApplicationContext(), "您还没安装微信，请安装后重试！");
                 }
                 break;
 
@@ -184,7 +183,7 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
                     JSONObject object = new JSONObject(s);
                     versionCode = object.getInt("versionCode");
                     url = object.getString("url");
-                    Log.i(TAG, "onPostExecute: " + object.toString());
+//                    Log.i(TAG, "onPostExecute: " + object.toString());
                     hasVersionCode = true;
                 }
             } catch (JSONException ignored) {
@@ -196,7 +195,7 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
                 AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(IndexActivity.this);
                 alertDialogBuilder.setCancelable(true);
                 alertDialog = alertDialogBuilder.setTitle("检测到新版本")
-                        .setMessage("v2.3.1 新版上线!\n-修复某情况导致推流异常退出bug\n-修复微信分享缩略图显示bug")
+                        .setMessage("v2.3.1 新版上线!\n-修复某情况导致推流异常退出bug\n-修复微信分享缩略图显示bug")//这里数据应该来自服务器 这样是不对的
                         .setPositiveButton("抢先体验", null)
                         .setNegativeButton("遗憾错过", null)
                         .create();

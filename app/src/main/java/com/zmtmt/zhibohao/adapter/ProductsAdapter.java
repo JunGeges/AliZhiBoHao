@@ -1,4 +1,4 @@
-package com.zmtmt.zhibohao.tools;
+package com.zmtmt.zhibohao.adapter;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -13,6 +13,7 @@ import android.widget.Toast;
 import com.bumptech.glide.Glide;
 import com.zmtmt.zhibohao.R;
 import com.zmtmt.zhibohao.entity.Products;
+import com.zmtmt.zhibohao.tools.HttpUtils;
 
 import java.util.ArrayList;
 import java.util.Map;

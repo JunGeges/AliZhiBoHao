@@ -1,4 +1,4 @@
-package com.zmtmt.zhibohao;
+package com.zmtmt.zhibohao.activity;
 
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -12,13 +12,14 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.bumptech.glide.Glide;
+import com.zmtmt.zhibohao.R;
 import com.zmtmt.zhibohao.entity.ShareInfo;
 import com.zmtmt.zhibohao.tools.HttpUtils;
 import com.zmtmt.zhibohao.tools.ShareUtils;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 
-public class endActivity extends AppCompatActivity implements View.OnClickListener {
+public class EndActivity extends AppCompatActivity implements View.OnClickListener {
     private TextView mTextViewTime, mTextViewPersons;
     private Button mButtonConfirm;
     private ImageView mImageViewWX, mImageViewPyq;

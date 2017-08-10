@@ -9,18 +9,17 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 
-import com.orhanobut.logger.Logger;
 import com.tencent.mm.sdk.modelbase.BaseReq;
 import com.tencent.mm.sdk.modelbase.BaseResp;
 import com.tencent.mm.sdk.modelmsg.SendAuth;
 import com.tencent.mm.sdk.openapi.IWXAPIEventHandler;
-import com.zmtmt.zhibohao.MyApplication;
+import com.zmtmt.zhibohao.app.MyApplication;
 import com.zmtmt.zhibohao.R;
-import com.zmtmt.zhibohao.WebActivity;
+import com.zmtmt.zhibohao.activity.WebActivity;
 import com.zmtmt.zhibohao.entity.User;
 import com.zmtmt.zhibohao.entity.WxAccessToken;
 import com.zmtmt.zhibohao.tools.HttpUtils;
-import com.zmtmt.zhibohao.tools.Utils;
+import com.zmtmt.zhibohao.tools.CommonUtils;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -30,10 +29,10 @@ import org.json.JSONObject;
  * Created by Administrator on 2016/7/21.
  */
 public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
-    private static final String TAG = "WXEntryActivity";
+    private static final String TAG = WXEntryActivity.class.getSimpleName();
     private static final int WXSHARE = 2;
     private static final int WXLOGIN = 1;
-    private User user ;
+    private User user;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,7 +43,6 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
 
     @Override
     protected void onStart() {
-        Logger.t(TAG).d("onStart");
         finish();
         super.onStart();
     }
@@ -52,7 +50,6 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        Logger.t(TAG).d("onDestroy");
     }
 
     @Override
@@ -79,7 +76,6 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
                         SendAuth.Resp aures = (SendAuth.Resp) baseResp;
                         //获取code
                         String code = aures.code;
-                        Logger.t(TAG).d("onResp" + code);
                         //请求获取UserInfo
                         getAccessToken(code);
                         Intent in = new Intent(WXEntryActivity.this, WebActivity.class);
@@ -91,7 +87,7 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
                 }
 
                 if (type == WXSHARE) {
-                    Utils.showToast(this, "分享成功");
+                    CommonUtils.showToast(this, "分享成功");
                 }
 
                 break;
@@ -102,9 +98,8 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
                 if (type == WXLOGIN) {
                     finish();
                 }
-
                 if (type == WXSHARE) {
-                    Utils.showToast(this, "分享已取消");
+                    CommonUtils.showToast(this, "分享已取消");
                 }
                 break;
 
@@ -122,7 +117,6 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        Log.d(TAG, "onNewIntent");
         setIntent(intent);
         MyApplication.api.handleIntent(intent, this);
     }
@@ -154,11 +148,10 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
                             //获取用户信息
                             User userInfo = getUserInfo(tokens);
                             //保存用户logo的url地址 和昵称
-                            Utils.saveToSp(WXEntryActivity.this, "WXUserParams", new String[]{"WXLogoUrl", "WXNickName"}, new String[]{userInfo.getHeadImgUrl(), userInfo.getNickName()});
-                            Logger.t(TAG).d("AccessToken" + tokens);
-                            Log.i(TAG, "onSuccessful: "+tokens);
+                            CommonUtils.saveToSp(WXEntryActivity.this, "WXUserParams", new String[]{"WXLogoUrl", "WXNickName"}, new String[]{userInfo.getHeadImgUrl(), userInfo.getNickName()});
+                            Log.i(TAG, "onSuccessful: " + tokens);
                             //存unionid
-                            Utils.saveToSp(WXEntryActivity.this, "unionId", new String[]{"unionId"}, userInfo.getUnionid());
+                            CommonUtils.saveToSp(WXEntryActivity.this, "unionId", new String[]{"unionId"}, userInfo.getUnionid());
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -172,6 +165,7 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
             }
         }.start();
     }
+
     /**
      * 获取用户信息
      *
@@ -184,7 +178,7 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
             public void onSuccessful(String response) {
                 if (response != null) {
                     try {
-                        user=new User();
+                        user = new User();
                         JSONObject object = new JSONObject(response);
                         user.setOpenId(object.getString("openid"));
                         user.setNickName(object.getString("nickname"));
@@ -201,8 +195,7 @@ public class WXEntryActivity extends Activity implements IWXAPIEventHandler {
                         }
                         user.setPrivilege(privilege);
                         user.setUnionid(object.getString("unionid"));
-                        Logger.t(TAG).d("UserInfo" + user);
-                        Log.i(TAG, "UserInfo: "+user);
+                        Log.i(TAG, "UserInfo: " + user);
                     } catch (JSONException e) {
                         e.printStackTrace();
                     }

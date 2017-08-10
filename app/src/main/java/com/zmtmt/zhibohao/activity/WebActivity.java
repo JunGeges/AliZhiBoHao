@@ -1,23 +1,21 @@
-package com.zmtmt.zhibohao;
+package com.zmtmt.zhibohao.activity;
 
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ClipData;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Environment;
-import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.ValueCallback;
@@ -25,33 +23,27 @@ import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.AdapterView;
-import android.widget.ArrayAdapter;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
-import android.widget.ListView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.orhanobut.logger.Logger;
+import com.zmtmt.zhibohao.BuildConfig;
+import com.zmtmt.zhibohao.R;
+import com.zmtmt.zhibohao.app.MyApplication;
 import com.zmtmt.zhibohao.entity.LiveRoomInfo;
 import com.zmtmt.zhibohao.entity.Products;
 import com.zmtmt.zhibohao.entity.ShareInfo;
+import com.zmtmt.zhibohao.tools.CommonUtils;
 import com.zmtmt.zhibohao.tools.HttpUtils;
 import com.zmtmt.zhibohao.tools.ShareUtils;
-import com.zmtmt.zhibohao.tools.Utils;
-import com.zmtmt.zhibohao.widget.CustomDialog;
 import com.zmtmt.zhibohao.widget.CustomPopupWindow;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -83,14 +75,13 @@ import static android.webkit.WebSettings.LOAD_NO_CACHE;
  */
 
 @SuppressLint("JavascriptInterface")
-public class WebActivity extends AppCompatActivity implements View.OnClickListener, CustomPopupWindow.ViewInterface {
+public class WebActivity extends AppCompatActivity implements View.OnClickListener, CustomPopupWindow.ViewInterface, View.OnLongClickListener {
     private static final String TAG = "WebActivity";
     private static final String URL = "http://www.zipindao.tv/app/index.php?c=entry&m=wg_test&i=4&do=applogin";
     private static final String INDEXURL = "http://www.zipindao.tv/app/index.php?c=entry&m=wg_test&do=myroomlive&i=4";
     private WebView mWebView;
     private ValueCallback<Uri> mUploadMessage;//回调图片选择，4.4以下
     private ValueCallback<Uri[]> mUploadCallbackAboveL;//回调图片选择，5.0以上
-
     private final static int FILECHOOSER_RESULTCODE = 1;
     private ProgressBar mProgressBar;
     private RelativeLayout rl_back, rl_option;
@@ -100,14 +91,11 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     private ArrayList<Products> pList;
     private static final int WXSCENETIMELINE = 1;//朋友圈
     private static final int WXSCENESESSION = 2;//好友
-    private int versionCode;
+    private int versionCode;//app版本号
     private TextView tv_cancel;
     private ShareInfo shareInfo;
     private List<ShareInfo> sList = new ArrayList<>();
     private long exitTime = 0;
-    private ArrayAdapter<String> adapter;
-    private File file;
-    private CustomDialog mCustomDialog;
     private String mBase;
     private FrameLayout mFrameLayout;
     private CustomPopupWindow mCustomPopupWindow_logff;
@@ -121,37 +109,38 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         setContentView(R.layout.activity_webview);
         MyApplication.list.add(this);
         initViews();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (mCustomPopupWindow_logff != null && mCustomPopupWindow_logff.isShowing())
-            mCustomPopupWindow_logff.dismiss();
-        if (mCustomPopupWindow_option != null && mCustomPopupWindow_option.isShowing())
-            mCustomPopupWindow_option.dismiss();
+        initEvent();
     }
 
     private void initViews() {
         versionCode = BuildConfig.VERSION_CODE;
-        mWebView = (WebView) findViewById(R.id.wv);
+        mFrameLayout = (FrameLayout) findViewById(R.id.frame_layout);
+        mWebView = new WebView(getApplicationContext());
+        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.MATCH_PARENT);
+        mWebView.setLayoutParams(layoutParams);
+        mFrameLayout.addView(mWebView);
         tv_url_title = (TextView) findViewById(R.id.tv_url_title);
         rl_back = (RelativeLayout) findViewById(R.id.rl_back);
-        rl_back.setOnClickListener(this);
         rl_option = (RelativeLayout) findViewById(R.id.rl_option);
-        rl_option.setOnClickListener(this);
         mProgressBar = (ProgressBar) findViewById(R.id.progressBar);
-        mFrameLayout = (FrameLayout) findViewById(R.id.frame_layout);
+    }
+
+    private void initEvent() {
+        rl_back.setOnClickListener(this);
+        rl_option.setOnClickListener(this);
         WebSettings settings = mWebView.getSettings();
-        //开启javascript
+        //支持javascript
         settings.setJavaScriptEnabled(true);
         mWebView.addJavascriptInterface(new JsToJava(), "app");
         //设置支持缩放
-        settings.setSupportZoom(false);
-        settings.setBuiltInZoomControls(false);//设置隐藏缩放按钮
-        //将图片调整到适合webview的大小
+        settings.setSupportZoom(true);//支持缩放
+        settings.setBuiltInZoomControls(true);//设置隐藏缩放按钮
+        settings.setDisplayZoomControls(false);//隐藏原生的缩放按钮
+
+        //设置自适应屏幕
         settings.setUseWideViewPort(true);
         settings.setLoadWithOverviewMode(true);
+
         //屏幕自适应网页  解决低分辨率可能会显示异常的问题
         settings.setDefaultZoom(WebSettings.ZoomDensity.FAR);
         settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
@@ -166,33 +155,12 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         settings.setAllowFileAccessFromFileURLs(true);
         settings.setAllowUniversalAccessFromFileURLs(true);
 
+        //支持自动加载图片
         settings.setLoadsImagesAutomatically(true);
 
-        //设置在webview内部跳转
         mWebView.setWebViewClient(new MyWebViewClient());
         mWebView.setWebChromeClient(new MyWebChromeClient());
-        //设置webview禁止长按出现裁剪
-        mWebView.setOnLongClickListener(new View.OnLongClickListener() {
-            @Override
-            public boolean onLongClick(View v) {
-                // 长按事件监听（注意：需要实现LongClickCallBack接口并传入对象）
-                final WebView.HitTestResult htr = mWebView.getHitTestResult();//获取所点击的内容
-                if (htr.getType() == WebView.HitTestResult.IMAGE_TYPE) {//判断被点击的类型为图片
-                    // 获取到图片地址后做相应的处理
-                    new Thread() {
-                        @Override
-                        public void run() {
-                            super.run();
-                            saveMyBitmap(HttpUtils.getBitmapByUrl(htr.getExtra()), "code");
-                        }
-                    }.start();
-                    showDialog();
-                } else {
-                    //屏蔽长按出现编辑项
-                }
-                return true;
-            }
-        });
+        mWebView.setOnLongClickListener(this);
         mWebView.loadUrl(URL);
     }
 
@@ -208,12 +176,12 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
             case R.id.rl_back:
                 if (mWebView.canGoBack()) {
                     if (INDEXURL.equals(mWebView.getUrl())) {
-                        Utils.showToast(WebActivity.this, getString(R.string.w_tip));
+                        CommonUtils.showToast(WebActivity.this, getString(R.string.w_tip));
                     } else {
                         mWebView.goBack();
                     }
                 } else {
-                    Utils.showToast(WebActivity.this, getString(R.string.w_tip));
+                    CommonUtils.showToast(WebActivity.this, getString(R.string.w_tip));
                 }
                 break;
 
@@ -236,29 +204,29 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
                 break;
 
             case R.id.tv_confirm:
-                logoff();
+                logOff();
                 break;
 
             case R.id.ll__share_circle:
                 if (sList.size() != 0) {
-                    ShareUtils.shareToWX(shareInfo, WXSCENETIMELINE,mBitmap);
+                    ShareUtils.shareToWX(shareInfo, WXSCENETIMELINE, mBitmap);
                 } else {
-                    Utils.showToast(WebActivity.this, getString(R.string.w_shareTip));
+                    CommonUtils.showToast(WebActivity.this, getString(R.string.w_shareTip));
                 }
                 break;
 
             case R.id.ll_share_friend:
                 if (sList.size() != 0) {
-                    ShareUtils.shareToWX(shareInfo, WXSCENESESSION,mBitmap);
+                    ShareUtils.shareToWX(shareInfo, WXSCENESESSION, mBitmap);
                 } else {
-                    Utils.showToast(WebActivity.this, getString(R.string.w_shareTip));
+                    CommonUtils.showToast(WebActivity.this, getString(R.string.w_shareTip));
                 }
                 break;
         }
     }
 
     //注销功能
-    private void logoff() {
+    private void logOff() {
         SharedPreferences.Editor sp = getSharedPreferences("unionId", WebActivity.MODE_PRIVATE).edit();
         sp.clear();
         sp.apply();
@@ -267,6 +235,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         finish();
     }
 
+    //确认是否注销弹窗
     private void showLogoffWindow() {
         if (mCustomPopupWindow_logff != null && mCustomPopupWindow_logff.isShowing()) return;
         mCustomPopupWindow_logff = new CustomPopupWindow.Builder(this)
@@ -279,6 +248,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         mCustomPopupWindow_logff.showAtLocation(mWebView, Gravity.CENTER, 0, 0);
     }
 
+    //注销选项弹窗
     private void showOptionPopWindow() {
         if (mCustomPopupWindow_option != null && mCustomPopupWindow_option.isShowing()) return;
         mCustomPopupWindow_option = new CustomPopupWindow.Builder(this)
@@ -290,6 +260,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         mCustomPopupWindow_option.showAsDropDown(rl_option);
     }
 
+    //分享弹窗
     public void showSharePopWindow() {
         if (mCustomPopupWindow_share != null && mCustomPopupWindow_share.isShowing()) return;
         mCustomPopupWindow_share = new CustomPopupWindow.Builder(this)
@@ -329,6 +300,12 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         }
     }
 
+    @Override
+    public boolean onLongClick(View v) {
+        //屏蔽长按事件
+        return true;
+    }
+
     class MyWebViewClient extends WebViewClient {
 
         @Override
@@ -360,7 +337,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         @Override
         public void onReceivedError(WebView webView, int errorCode, String description, String failingUrl) {
             super.onReceivedError(webView, errorCode, description, failingUrl);
-            Utils.showToast(WebActivity.this, "请检查您的网络! ");
+            CommonUtils.showToast(WebActivity.this, getString(R.string.check_net));
         }
     }
 
@@ -440,133 +417,48 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     @Override
     public boolean onKeyDown(int keyCode, KeyEvent event) {
         if (keyCode == KeyEvent.KEYCODE_BACK && mWebView.canGoBack()) {
-            mWebView.goBack();
-        } else if (keyCode == KeyEvent.KEYCODE_BACK && event.getAction() == KeyEvent.ACTION_DOWN) {
-            if (System.currentTimeMillis() - exitTime > 2000) {
-                Utils.showToast(this, getString(R.string.w_exit_app));
-                exitTime = System.currentTimeMillis();
-            } else {
-                for (int i = 0; i < MyApplication.list.size(); i++) {
-                    MyApplication.list.get(i).finish();
+            if (mWebView.getUrl().equals(INDEXURL)) {
+                if (System.currentTimeMillis() - exitTime > 2000) {
+                    CommonUtils.showToast(this, getString(R.string.w_exit_app));
+                    exitTime = System.currentTimeMillis();
+                } else {
+                    for (int i = 0; i < MyApplication.list.size(); i++) {
+                        MyApplication.list.get(i).finish();
+                    }
                 }
+            } else {
+                mWebView.goBack();
             }
         }
         return true;
     }
 
-    /**
-     * 显示Dialog
-     * param v
-     */
-    private void showDialog() {
-        initAdapter();
-        mCustomDialog = new CustomDialog(this) {
-            @Override
-            public void initViews() {
-                // 初始CustomDialog化控件
-                ListView mListView = (ListView) findViewById(R.id.lv_dialog);
-                mListView.setAdapter(adapter);
-                mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
-                    @Override
-                    public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                        // 点击事件
-                        switch (position) {
-                            case 0:
-                                sendToFriends();//把图片发送给好友
-                                closeDialog();
-                                break;
-                            case 1:
-                                saveImageToGallery(WebActivity.this);
-                                Utils.showToast(WebActivity.this, "成功保存到图库");
-                                closeDialog();
-                                break;
-                            case 2:
-                                Utils.showToast(WebActivity.this, "已收藏");
-                                closeDialog();
-                                break;
-                        }
+    @Override
+    protected void onDestroy() {
+        if (mCustomPopupWindow_logff != null && mCustomPopupWindow_logff.isShowing())
+            mCustomPopupWindow_logff.dismiss();
+        if (mCustomPopupWindow_option != null && mCustomPopupWindow_option.isShowing())
+            mCustomPopupWindow_option.dismiss();
 
-                    }
-                });
-            }
-        };
-        mCustomDialog.show();
-    }
+        //销毁WebView
+        if (mWebView != null) {
+            mWebView.loadDataWithBaseURL(null, "", "text/html", "utf-8", null);
+            mWebView.clearHistory();
 
-    /**
-     * 初始化数据
-     */
-    private void initAdapter() {
-        adapter = new ArrayAdapter<String>(this, R.layout.item_dialog);
-        adapter.add("发送给朋友");
-        adapter.add("保存到手机");
-        adapter.add("收藏");
-    }
-
-    /**
-     * 发送给好友
-     */
-    private void sendToFriends() {
-        Intent intent = new Intent(Intent.ACTION_SEND);
-        Uri imageUri = Uri.parse(file.getAbsolutePath());
-        intent.setType("image/*");
-        intent.putExtra(Intent.EXTRA_STREAM, imageUri);
-        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        startActivity(Intent.createChooser(intent, getTitle()));
-    }
-
-    /**
-     * bitmap 保存为jpg 图片
-     *
-     * @param mBitmap 图片源
-     * @param bitName 图片名
-     */
-    public void saveMyBitmap(Bitmap mBitmap, String bitName) {
-        file = new File(Environment.getExternalStorageDirectory() + "/" + bitName + ".jpg");
-        FileOutputStream fOut = null;
-        try {
-            fOut = new FileOutputStream(file);
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
+            ((ViewGroup) mWebView.getParent()).removeView(mWebView);
+            mWebView.destroy();
+            mWebView = null;
         }
-        mBitmap.compress(Bitmap.CompressFormat.JPEG, 100, fOut);
-        try {
-            fOut.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        try {
-            fOut.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * 先保存到本地再广播到图库
-     */
-    public void saveImageToGallery(Context context) {
-
-        // 其次把文件插入到系统图库
-        try {
-            MediaStore.Images.Media.insertImage(context.getContentResolver(), file.getAbsolutePath(), "code", null);
-            // 最后通知图库更新
-            context.sendBroadcast(new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, Uri.parse("file://"
-                    + file)));
-        } catch (FileNotFoundException e) {
-            e.printStackTrace();
-        }
+        super.onDestroy();
     }
 
     /**
      * 给javaScript调用的类以及方法
      */
     public class JsToJava {
-        /***
-         * @param s liveid
-         * 自己做直播调用的
-         */
+
+        //自己做直播js调用的方法
         @JavascriptInterface
         public void openCamera(String s) {
             Intent in = new Intent(WebActivity.this, PushParamsActivity.class);
@@ -579,10 +471,9 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
             shareInfo.setLiveId(s);
             in.putExtra("shareinfo", shareInfo);
             startActivity(in);
-//            Logger.t(TAG).d(shareInfo);
         }
 
-        //别人邀约做直播调用
+        //别人邀约自己做直播js调用的方法
         @JavascriptInterface
         public void openCamera(String liveId, String json) {
             //清空自己的直播间的商品
@@ -611,7 +502,6 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
                 in.putExtra("memberlevelid", memberLevel);
                 in.putExtra("eventurl", lri.getEventUrl());
                 in.putParcelableArrayListExtra("products_list", pList);
-                Logger.t(TAG).json(json);
             } catch (JSONException e) {
                 e.printStackTrace();
             }
@@ -620,6 +510,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
             startActivity(in);
         }
 
+        //接收js回传的信息包含（商品,推流,会员相关）
         @JavascriptInterface
         public void setProfile(String json) {//base属性 + img属性  拼接去取图片  goods是JSONobject
             if (json != null) {
@@ -649,19 +540,20 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
                         products.setProducts_icon(mBaseUrl + object_good.getString("img"));
                         pList.add(products);
                     }
-                    Logger.t(TAG).json(json);
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
             }
         }
 
+        //js端通过unionId判断用户相关
         @JavascriptInterface
         public String getToken() {
             String unionId = getSharedPreferences("unionId", WebActivity.MODE_PRIVATE).getString("unionId", "");
             return unionId;
         }
 
+        //接收js回传的分享信息
         @JavascriptInterface
         public void setShare(String json) {
             try {
@@ -686,9 +578,9 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
             } catch (JSONException e) {
                 e.printStackTrace();
             }
-            Logger.t("SHAREINFO").d(shareInfo.toString() + sList.size() + "");
         }
 
+        //app版本号
         @JavascriptInterface
         public int getVersion() {
             return versionCode;

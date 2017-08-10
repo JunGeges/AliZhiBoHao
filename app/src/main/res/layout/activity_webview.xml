@@ -3,7 +3,7 @@
                 xmlns:tools="http://schemas.android.com/tools"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
-                tools:context="com.zmtmt.zhibohao.WebActivity">
+                tools:context="com.zmtmt.zhibohao.activity.WebActivity">
 
     <RelativeLayout
         android:id="@+id/rl_layout"
@@ -63,10 +63,6 @@
         android:layout_below="@+id/rl_layout"
         >
 
-        <WebView
-            android:id="@+id/wv"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"/>
     </FrameLayout>
 
     <ProgressBar

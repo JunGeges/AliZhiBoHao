@@ -1,4 +1,4 @@
-package com.zmtmt.zhibohao;
+package com.zmtmt.zhibohao.activity;
 
 import android.graphics.Color;
 import android.os.Bundle;
@@ -11,10 +11,11 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.TextView;
 
+import com.zmtmt.zhibohao.R;
+
 public class SpeedTestActivity extends AppCompatActivity {
 
     private WebView mWebView;
-    private static final String URL="http://182.61.1.33/Speed/";
     private TextView tv_0,tv_1,tv_2,tv_3;
 
     @Override
@@ -54,6 +55,5 @@ public class SpeedTestActivity extends AppCompatActivity {
         settings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.SINGLE_COLUMN);
         mWebView.loadUrl("file:///android_asset/speedtest.html");
         mWebView.setWebViewClient(new WebViewClient());
-        //        mWebView.loadUrl(URL);
     }
 }

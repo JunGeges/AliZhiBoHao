@@ -47,7 +47,7 @@ import android.widget.Toast;
  * 　　　　　　　　　　┗┻┛　┗┻┛+ + + +
  */
 
-public class Utils {
+public class CommonUtils {
 
     public static Toast mToast;
 
@@ -64,7 +64,7 @@ public class Utils {
     //缓存类
     public LruCache<String, Bitmap> mLruCache;
 
-    public Utils() {
+    public CommonUtils() {
         //获得可用最大的内存
         int maxMemory = (int) Runtime.getRuntime().maxMemory();
         int cacheSize = maxMemory / 4;

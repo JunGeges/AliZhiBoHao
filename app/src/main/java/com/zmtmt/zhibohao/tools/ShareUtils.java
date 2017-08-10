@@ -5,7 +5,7 @@ import android.graphics.Bitmap;
 import com.tencent.mm.sdk.modelmsg.SendMessageToWX;
 import com.tencent.mm.sdk.modelmsg.WXMediaMessage;
 import com.tencent.mm.sdk.modelmsg.WXWebpageObject;
-import com.zmtmt.zhibohao.MyApplication;
+import com.zmtmt.zhibohao.app.MyApplication;
 import com.zmtmt.zhibohao.entity.ShareInfo;
 
 import java.io.ByteArrayOutputStream;

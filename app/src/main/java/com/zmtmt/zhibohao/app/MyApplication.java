@@ -1,4 +1,4 @@
-package com.zmtmt.zhibohao;
+package com.zmtmt.zhibohao.app;
 
 import android.app.Activity;
 import android.app.Application;
@@ -7,11 +7,10 @@ import android.support.multidex.MultiDex;
 
 import com.bumptech.glide.request.target.ViewTarget;
 import com.duanqu.qupai.jni.ApplicationGlue;
-import com.orhanobut.logger.LogLevel;
-import com.orhanobut.logger.Logger;
 import com.tencent.bugly.crashreport.CrashReport;
 import com.tencent.mm.sdk.openapi.IWXAPI;
 import com.tencent.mm.sdk.openapi.WXAPIFactory;
+import com.zmtmt.zhibohao.R;
 
 import java.util.ArrayList;
 
@@ -34,7 +33,6 @@ public class MyApplication extends Application {
         super.onCreate();
         ViewTarget.setTagId(R.id.glide_tag);
         isInstallWx = isWXAppInstalledAndSupported();
-        initLogger();
 
         //alibaba
         System.loadLibrary("gnustl_shared");
@@ -52,10 +50,6 @@ public class MyApplication extends Application {
     protected void attachBaseContext(Context base) {
         super.attachBaseContext(base);
         MultiDex.install(this);
-    }
-
-    private void initLogger() {
-        Logger.init(TAG).logLevel(LogLevel.FULL);
     }
 
     private boolean isWXAppInstalledAndSupported() {
