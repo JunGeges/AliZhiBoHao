@@ -28,8 +28,8 @@
     <uses-permission android:name="android.permission.GET_TASKS"/>
 
     <!--适配安卓6.0以上select点不出来的权限-->
-    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.SYSTEM_OVERLAY_WINDOW" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW"/>
+    <uses-permission android:name="android.permission.SYSTEM_OVERLAY_WINDOW"/>
 
     <!--bugly配置的权限start-->
     <uses-permission android:name="android.permission.READ_LOGS"/>
@@ -91,7 +91,8 @@
                 android:resource="@xml/file_paths"/>
         </provider>
 
-        <activity android:name=".activity.SpeedTestActivity"
+        <activity
+            android:name=".activity.SpeedTestActivity"
             android:screenOrientation="landscape"
             >
         </activity>

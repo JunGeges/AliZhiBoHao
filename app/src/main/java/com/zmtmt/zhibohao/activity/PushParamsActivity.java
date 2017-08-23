@@ -295,7 +295,7 @@ public class PushParamsActivity extends Activity implements View.OnClickListener
                         .maxBitrate(maxBitrate)
                         .frameRate(frameRate)
                         .initBitrate(initBitrate)
-                        .memberlevelId(memberlevelId)
+                        .memberLevelId(memberlevelId)
                         .eventUrl(eventUrl)
                         .productList(productList)
                         .shareInfo(mShareInfo)

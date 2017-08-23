@@ -16,7 +16,7 @@ import java.io.ByteArrayOutputStream;
 
 public class ShareUtils {
     //分享
-    public static void shareToWX(final ShareInfo shareInfo, final int scene,Bitmap bitmap) {
+    public static void shareToWX(final ShareInfo shareInfo, final int scene, Bitmap bitmap) {
         //构建一个WXWebpageObject对象，用于封装要分享的链接Url地址
         WXWebpageObject webpage = new WXWebpageObject();
         webpage.webpageUrl = shareInfo.getLink();
@@ -25,7 +25,7 @@ public class ShareUtils {
         WXMediaMessage msg = new WXMediaMessage(webpage);
         msg.title = shareInfo.getTitle();
         msg.description = shareInfo.getDesc();
-        msg.thumbData=bitmap2Bytes(bitmap,30);
+        msg.thumbData = bitmap2Bytes(bitmap, 30);
 
         //构建一个微信请求
         SendMessageToWX.Req reqs = new SendMessageToWX.Req();
@@ -42,14 +42,17 @@ public class ShareUtils {
     }
 
     public static byte[] bitmap2Bytes(Bitmap bitmap, int maxkb) {
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        bitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
-        int options = 100;
-        while (output.toByteArray().length > maxkb&& options != 10) {
-            output.reset(); //清空output
-            bitmap.compress(Bitmap.CompressFormat.JPEG, options, output);//这里压缩options%，把压缩后的数据存放到output中
-            options -= 10;
+        if (bitmap != null) {
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            bitmap.compress(Bitmap.CompressFormat.PNG, 100, output);
+            int options = 100;
+            while (output.toByteArray().length > maxkb && options != 10) {
+                output.reset(); //清空output
+                bitmap.compress(Bitmap.CompressFormat.JPEG, options, output);//这里压缩options%，把压缩后的数据存放到output中
+                options -= 10;
+            }
+            return output.toByteArray();
         }
-        return output.toByteArray();
+        return null;
     }
 }

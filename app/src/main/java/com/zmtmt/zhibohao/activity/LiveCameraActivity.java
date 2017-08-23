@@ -21,7 +21,6 @@ import android.os.Message;
 import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.PermissionChecker;
 import android.text.TextUtils;
-import android.util.Log;
 import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.Gravity;
@@ -42,9 +41,6 @@ import android.widget.PopupWindow;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-import com.alibaba.livecloud.event.AlivcEvent;
-import com.alibaba.livecloud.event.AlivcEventResponse;
-import com.alibaba.livecloud.event.AlivcEventSubscriber;
 import com.alibaba.livecloud.live.AlivcMediaFormat;
 import com.alibaba.livecloud.live.AlivcMediaRecorder;
 import com.alibaba.livecloud.live.AlivcMediaRecorderFactory;
@@ -89,6 +85,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private int mCurrFacing;
     private int mScaledTouchSlop;
     private CommentAdapter commentAdapter;
+    private static final int UI_EVENT_CANCEL_TIMER = 13;
 
     public static class RequestBuilder {
         String rtmpUrl;
@@ -106,7 +103,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         int frameRate;
         ArrayList<Products> pList;
         String eventUrl;//请求地址
-        int memberlevelId;
+        int memberLevelId;
         ShareInfo mShareInfo; //分享信息带直播会话ID
         String openID;
 
@@ -185,8 +182,8 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             return this;
         }
 
-        public RequestBuilder memberlevelId(int memberlevelId) {
-            this.memberlevelId = memberlevelId;
+        public RequestBuilder memberLevelId(int memberLevelId) {
+            this.memberLevelId = memberLevelId;
             return this;
         }
 
@@ -216,7 +213,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             intent.putExtra(INIT_BITRATE, initBitrate);
             intent.putExtra(FRAME_RATE, frameRate);
             intent.putExtra(SHARE_INFO, mShareInfo);
-            intent.putExtra(MEMBERLEVEL_ID, memberlevelId);
+            intent.putExtra(MEMBERLEVEL_ID, memberLevelId);
             intent.putExtra(EVENT_URL, eventUrl);
             intent.putExtra(PRODUCT_LIST, pList);
             intent.putExtra(OPEN_ID, openID);
@@ -274,7 +271,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private ImageView btn_pop_pro;
     private ArrayList<Products> pList;
     private String eventUrl;//请求地址
-    private int memberlevelId;
+    private int memberLevelId;
     private ShareInfo mShareInfo; //分享信息带直播会话ID
     //评论
     private static final int UI_EVENT_GET_COMMENT = 11;
@@ -289,7 +286,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
     private int initBitrate;
     private int frameRate;
     private TextView mTv_watch_person;
-    private ArrayList<Comment> cList = new ArrayList<Comment>();
+    private ArrayList<Comment> cList = new ArrayList<>();
     private int firstSize = 0;
     private int lastSize = 0;
     private static final String IS_NEW = "1";//最新数据
@@ -518,7 +515,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                 break;
 
             case R.id.c_ll_share_pyq:
-                ShareUtils.shareToWX(mShareInfo, 1,mBitmap);
+                ShareUtils.shareToWX(mShareInfo, 1, mBitmap);
                 if (mPop_settings != null) mPop_settings.dismiss();
                 if (mSharePopupWindow != null) mSharePopupWindow.dismiss();
                 break;
@@ -625,7 +622,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
             frameRate = bundle.getInt(FRAME_RATE);
             pList = bundle.getParcelableArrayList(PRODUCT_LIST);
             eventUrl = bundle.getString(EVENT_URL);
-            memberlevelId = bundle.getInt(MEMBERLEVEL_ID);
+            memberLevelId = bundle.getInt(MEMBERLEVEL_ID);
             mShareInfo = bundle.getParcelable(SHARE_INFO);
             openID = bundle.getString(OPEN_ID);
             //获取分享缩略图
@@ -688,19 +685,9 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         super.onResume();
         if (mPreviewSurface != null) {
             mMediaRecorder.prepare(mConfigure, mPreviewSurface);
-            Log.d("AlivcMediaRecorder", " onResume==== isRecording =" + isRecording + "=====");
+//            Log.d("AlivcMediaRecorder", " onResume==== isRecording =" + isRecording + "=====");
         }
-        mMediaRecorder.subscribeEvent(new AlivcEventSubscriber(AlivcEvent.EventType.EVENT_BITRATE_DOWN, mBitrateDownRes));//注册码率下降调整事件
-        mMediaRecorder.subscribeEvent(new AlivcEventSubscriber(AlivcEvent.EventType.EVENT_BITRATE_RAISE, mBitrateUpRes));//注册码率上升调整事件
-        mMediaRecorder.subscribeEvent(new AlivcEventSubscriber(AlivcEvent.EventType.EVENT_AUDIO_CAPTURE_OPEN_SUCC, mAudioCaptureSuccRes));
-        mMediaRecorder.subscribeEvent(new AlivcEventSubscriber(AlivcEvent.EventType.EVENT_DATA_DISCARD, mDataDiscardRes));
-        mMediaRecorder.subscribeEvent(new AlivcEventSubscriber(AlivcEvent.EventType.EVENT_INIT_DONE, mInitDoneRes));
-        mMediaRecorder.subscribeEvent(new AlivcEventSubscriber(AlivcEvent.EventType.EVENT_VIDEO_ENCODER_OPEN_SUCC, mVideoEncoderSuccRes));
-        mMediaRecorder.subscribeEvent(new AlivcEventSubscriber(AlivcEvent.EventType.EVENT_VIDEO_ENCODER_OPEN_FAILED, mVideoEncoderFailedRes));
-        mMediaRecorder.subscribeEvent(new AlivcEventSubscriber(AlivcEvent.EventType.EVENT_VIDEO_ENCODED_FRAMES_FAILED, mVideoEncodeFrameFailedRes));
-        mMediaRecorder.subscribeEvent(new AlivcEventSubscriber(AlivcEvent.EventType.EVENT_AUDIO_ENCODED_FRAMES_FAILED, mAudioEncodeFrameFailedRes));
-        mMediaRecorder.subscribeEvent(new AlivcEventSubscriber(AlivcEvent.EventType.EVENT_AUDIO_CAPTURE_OPEN_FAILED, mAudioCaptureOpenFailedRes));
-        addView(new TextView(LiveCameraActivity.this), "请点击右侧录制按钮开始(结束)直播");
+        addView(new TextView(LiveCameraActivity.this), getString(R.string.start_push_stream));
     }
 
     @Override
@@ -708,16 +695,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         if (isRecording) {
             mMediaRecorder.stopRecord();
         }
-        mMediaRecorder.unSubscribeEvent(AlivcEvent.EventType.EVENT_BITRATE_DOWN);
-        mMediaRecorder.unSubscribeEvent(AlivcEvent.EventType.EVENT_BITRATE_RAISE);
-        mMediaRecorder.unSubscribeEvent(AlivcEvent.EventType.EVENT_AUDIO_CAPTURE_OPEN_SUCC);
-        mMediaRecorder.unSubscribeEvent(AlivcEvent.EventType.EVENT_DATA_DISCARD);
-        mMediaRecorder.unSubscribeEvent(AlivcEvent.EventType.EVENT_INIT_DONE);
-        mMediaRecorder.unSubscribeEvent(AlivcEvent.EventType.EVENT_VIDEO_ENCODER_OPEN_SUCC);
-        mMediaRecorder.unSubscribeEvent(AlivcEvent.EventType.EVENT_VIDEO_ENCODER_OPEN_FAILED);
-        mMediaRecorder.unSubscribeEvent(AlivcEvent.EventType.EVENT_VIDEO_ENCODED_FRAMES_FAILED);
-        mMediaRecorder.unSubscribeEvent(AlivcEvent.EventType.EVENT_AUDIO_ENCODED_FRAMES_FAILED);
-        mMediaRecorder.unSubscribeEvent(AlivcEvent.EventType.EVENT_AUDIO_CAPTURE_OPEN_FAILED);
         /**
          * 如果要调用stopRecord和reset()方法，则stopRecord（）必须在reset之前调用，否则将会抛出IllegalStateException
          */
@@ -733,7 +710,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         mMediaRecorder.release();
         if (timer_comment != null) timer_comment.cancel();
         if (timer_time != null) timer_time.cancel();
-        Map<String, String> params = new HashMap<String, String>();
+        Map<String, String> params = new HashMap<>();
         params.put("op", OPERATION);
         params.put("liveid", mShareInfo.getLiveId());
         params.put("state", STOP_STATE);
@@ -757,21 +734,23 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                         }
                         mRecorderButton.setBackgroundResource(R.drawable.ic_video_stop);
                         getComment();//轮询获取评论信息
-                        checkRecordTime();//开始直播开始计次与号外棒扣取
-                        final Map<String, String> param = new HashMap<String, String>();
+                        checkRecordTime();//开始直播开始计次与号外棒扣取 v3 v4 v5不限制只考虑会员是否过期
+                        final Map<String, String> param = new HashMap<>();
                         param.put("op", OPERATION);
                         param.put("liveid", mShareInfo.getLiveId());
                         param.put("state", START_STATE);
                         param.put("openid", openID);
                         requestChangeLiveState(param);
+
                         mCountTimeView.setVisibility(View.VISIBLE);
-                        mCountTimeView.startCountTime();
+                        mCountTimeView.startCountTime();//停止计时
                         addView(new TextView(LiveCameraActivity.this), getString(R.string.c_pushStream_start));
                     } catch (Exception e) {
                     }
                     break;
 
                 case UI_EVENT_RECORDER_STOPPED:
+                    if (timer_comment != null) timer_comment.cancel();
                     mCountTimeView.stopCountTime();
                     mMediaRecorder.stopRecord();
                     isRecording = false;
@@ -785,12 +764,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                     params.put("starttime", currentTime);
                     requestChangeLiveState(params);
                     int arg = msg.arg1;
-                    if (arg == 13) {
-                        //普通会员正常到达时间
-                        timer_time.cancel();//取消获取时间的定时器
-                        mRecorderButton.setEnabled(false);
-                        addView(new TextView(LiveCameraActivity.this), getString(R.string.c_member_pushStreamTime));
-                    } else if (arg == 14) {
+                    if (arg == 14) {
                         //号外棒不足
                         timer_time.cancel();
                         mRecorderButton.setEnabled(false);
@@ -806,13 +780,13 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                         mRecorderButton.setEnabled(false);
                         addView(new TextView(LiveCameraActivity.this), getString(R.string.c_member_count_error));
                     } else if (arg == 17) {
-                        //超级会员正常到达的时间
+                        //非法操作
                         timer_time.cancel();
                         mRecorderButton.setEnabled(false);
-                        addView(new TextView(LiveCameraActivity.this), getString(R.string.c_member_pushStreamTime));
+                        addView(new TextView(LiveCameraActivity.this), getString(R.string.c_illegal_operation));
                     } else {
                         //正常的用户操作
-                        timer_time.cancel();
+                        if (timer_time != null) timer_time.cancel();
                         mRecorderButton.setEnabled(true);
                         addView(new TextView(LiveCameraActivity.this), getString(R.string.c_pushStream_stop));
                     }
@@ -825,6 +799,12 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                 case UI_EVENT_GET_COMMENT:
                     new CommentAsyncTask().execute(eventUrl);
                     break;
+
+                case UI_EVENT_CANCEL_TIMER:
+                    if (timer_time != null) timer_time.cancel();//计次成功取消定时器
+                    break;
+
+
             }
         }
     };
@@ -853,7 +833,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         @Override
         protected ArrayList<Comment> doInBackground(final String... strings) {
             firstSize = cList.size();
-            Map<String, String> params = new HashMap<String, String>();
+            Map<String, String> params = new HashMap<>();
             params.put("isNew", IS_NEW);
             params.put("liveid", mShareInfo.getLiveId());
             params.put("id", ID);
@@ -867,7 +847,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                             String isNew = array_1.getString(0);
                             ID = array_1.getString(1);
                             person = array_1.getString(2);
-                            Log.i(TAG, "onSuccessful: " + person);
                             for (int i = 1; i < array.length(); i++) {
                                 final Comment c = new Comment();//评论类
                                 CommentContent c_content = new CommentContent();//评论内容类
@@ -879,13 +858,11 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                                     c.setComment_content(c_content);
                                     c.setCommenttype(object.getString("commenttype"));
                                     c.setIssystem(object.getString("issystem"));
-
                                     c.setComment_head_url(object.getString("userimg"));
                                     c.setComment_nick_name(object.getString("usernickname"));
                                     c.setComment_floor(object.getString("louhao"));
                                     c.setComment_time(object.getString("addtime"));
                                     cList.add(c);
-
                                 } else if (comment_type.equals("2")) {//商品推荐
                                     String comment_json = object.getString("commentcontent");
                                     JSONObject object_comment_recommend_products = new JSONObject(comment_json);
@@ -893,7 +870,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                                     c.setComment_content(c_content);
                                     c.setCommenttype(comment_type);
                                     c.setIssystem(object.getString("issystem"));
-
                                     c.setComment_head_url(object.getString("userimg"));
                                     c.setComment_nick_name(object.getString("usernickname"));
                                     c.setComment_floor(object.getString("louhao"));
@@ -906,13 +882,11 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                                     c.setComment_content(c_content);
                                     c.setCommenttype(comment_type);
                                     c.setIssystem(object.getString("issystem"));
-
                                     c.setComment_head_url(object.getString("userimg"));
                                     c.setComment_nick_name(object.getString("usernickname"));
                                     c.setComment_floor(object.getString("louhao"));
                                     c.setComment_time(object.getString("addtime"));
                                     cList.add(c);
-
                                 } else if (comment_type.equals("4")) {//购买
                                     String comment_json = object.getString("commentcontent");
                                     JSONObject object_comment_products = new JSONObject(comment_json);
@@ -920,15 +894,11 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                                     c.setComment_content(c_content);
                                     c.setCommenttype(comment_type);
                                     c.setIssystem(object.getString("issystem"));
-
                                     c.setComment_head_url(object.getString("userimg"));
                                     c.setComment_nick_name(object.getString("usernickname"));
                                     c.setComment_floor(object.getString("louhao"));
                                     c.setComment_time(object.getString("addtime"));
                                     cList.add(c);
-                                } else {
-                                    //这个评论不添加到集合里面去
-
                                 }
                             }
                         } catch (JSONException e) {
@@ -941,7 +911,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
 
                 @Override
                 public void onFailed(String error) {
-                    Log.i(TAG, "onFailed: " + error);
+
                 }
             });
             return cList;
@@ -950,16 +920,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         @Override
         protected void onPostExecute(ArrayList<Comment> comments) {
             c_pop_talk_empty_tip.setVisibility(comments.size() > 0 ? View.GONE : View.VISIBLE);
-            //更新在线人数
-/*            int personFormat = Integer.parseInt(person);
-            Log.i(TAG, "onPostExecute: " + person);
-            if (personFormat >= 10000) {
-                int num = personFormat / 10000;
-                int num2 = personFormat / 1000 % 10;
-                int num3 = personFormat / 100 % 10;
-                person = num + "." + num2 + num3 + "万";
-            }*/
-                mTv_watch_person.setText(person);
+            mTv_watch_person.setText(person);
             if (commentAdapter == null) {
                 commentAdapter = new CommentAdapter(LiveCameraActivity.this, comments);
                 mListView.setAdapter(commentAdapter);
@@ -1001,43 +962,41 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
      */
     private void postToServer() {
         int recordTime = (int) mCountTimeView.getTotalTime();
-        if (!isCount && (recordTime >= 300)) {
-            // 记次失后的五次重新记次如果没成功，就停止推流
-            if (recordTime > 600) {//memberlevelId<3
+        //v2以下的会员5分钟开始计次
+        if (!isCount && recordTime >= 300 && memberLevelId <= 2) {
+            // 五次记次失败后的重新记次如果没成功，就停止推流
+            if (recordTime >= 600) {
                 //如果到10分钟还没记次成功就强制停止推流
                 Message msg = Message.obtain();
                 msg.arg1 = 16;
                 msg.what = UI_EVENT_RECORDER_STOPPED;
                 mUIEventHandler.sendMessage(msg);
             }
-            final Map<String, String> params = new HashMap<String, String>();
-            params.put("openid", openID);
-            params.put("liveid", mShareInfo.getLiveId());
-            RequestTask task = new RequestTask(params);
-            task.execute(eventUrl + "liveconsumeajax");
+            executeAsyncTask();
+        } else if (memberLevelId > 2) {
+            //v3 4 5会员只需考虑是否过期
+            executeAsyncTask();
         }
-        if (recordTime >= 2700 && (memberlevelId == 0 || memberlevelId == 1 || memberlevelId == 2)) {
-            Message msg = Message.obtain();
-            msg.arg1 = 13;
-            msg.what = UI_EVENT_RECORDER_STOPPED;
-            mUIEventHandler.sendMessage(msg);
-        } else {
-            if (recordTime >= 14400 && (memberlevelId > 2)) {//4  不限时3 5
-                Message msg = Message.obtain();
-                msg.arg1 = 17;
-                msg.what = UI_EVENT_RECORDER_STOPPED;
-                mUIEventHandler.sendMessage(msg);
-            }
-        }
+    }
+
+    /**
+     * 执行异步请求计次
+     */
+    private void executeAsyncTask() {
+        final Map<String, String> params = new HashMap<>();
+        params.put("openid", openID);
+        params.put("liveid", mShareInfo.getLiveId());
+        RequestConsumeTask requestConsumetask = new RequestConsumeTask(params);
+        requestConsumetask.execute(eventUrl + "liveconsumeajax");
     }
 
     private int stateCode;
 
-    class RequestTask extends AsyncTask<String, Void, Integer> {
+    class RequestConsumeTask extends AsyncTask<String, Void, Integer> {
         public Map<String, String> requestParams;
 
 
-        public RequestTask(Map<String, String> params) {
+        public RequestConsumeTask(Map<String, String> params) {
             this.requestParams = params;
         }
 
@@ -1069,6 +1028,9 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                 //记次成功
                 case 200:
                     isCount = true;
+                    Message msg_299 = Message.obtain();
+                    msg_299.what = UI_EVENT_CANCEL_TIMER;
+                    mUIEventHandler.sendMessage(msg_299);
                     break;
 
                 //号外棒不足
@@ -1089,11 +1051,19 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
 
                 //非法操作
                 case 400:
+                    Message msg_298 = Message.obtain();
+                    msg_298.arg1 = 17;
+                    msg_298.what = UI_EVENT_RECORDER_STOPPED;
+                    mUIEventHandler.sendMessage(msg_298);
                     break;
 
                 //记次失败
                 case 500:
                     isCount = false;
+                    break;
+
+                default:
+
                     break;
             }
         }
@@ -1317,7 +1287,8 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
         public void onError(int errorCode) {
             switch (errorCode) {
                 case AlivcStatusCode.ERROR_ILLEGAL_ARGUMENT:
-                    showIllegalArgumentDialog("推流地址有误");
+                    //帧数据错误 SDK内部错误
+//                    showIllegalArgumentDialog("参数有误");
                 case AlivcStatusCode.ERROR_SERVER_CLOSED_CONNECTION:
                     //发生违法操作时，服务器会主动断开链接
                     addView(new TextView(LiveCameraActivity.this), "服务器断开连接");
@@ -1335,7 +1306,7 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
                     break;
                 case AlivcStatusCode.ERROR_IO:
                     //导致该错误的情况比较多，比如网络环境较差或者推流域名错误等导致DNS解析失败等
-                    addView(new TextView(LiveCameraActivity.this), "I/O错误");
+                    addView(new TextView(LiveCameraActivity.this), "网络环境较差");
                     break;
                 case AlivcStatusCode.ERROR_NETWORK_UNREACHABLE:
                     //该错误通常发生在网络无法传输数据的情况，或者推流过程网络中断等情况
@@ -1344,87 +1315,6 @@ public class LiveCameraActivity extends Activity implements View.OnClickListener
 
                 default:
             }
-        }
-    };
-
-    private AlivcEventResponse mBitrateUpRes = new AlivcEventResponse() {
-        @Override
-        public void onEvent(AlivcEvent event) {
-            Bundle bundle = event.getBundle();
-            int preBitrate = bundle.getInt(AlivcEvent.EventBundleKey.KEY_PRE_BITRATE);
-            int currBitrate = bundle.getInt(AlivcEvent.EventBundleKey.KEY_CURR_BITRATE);
-//            Log.d(TAG, "event->up bitrate, previous bitrate is " + preBitrate +
-//                    "current bitrate is " + currBitrate);
-        }
-    };
-    private AlivcEventResponse mBitrateDownRes = new AlivcEventResponse() {
-        @Override
-        public void onEvent(AlivcEvent event) {
-            Bundle bundle = event.getBundle();
-            int preBitrate = bundle.getInt(AlivcEvent.EventBundleKey.KEY_PRE_BITRATE);
-            int currBitrate = bundle.getInt(AlivcEvent.EventBundleKey.KEY_CURR_BITRATE);
-//            Log.d(TAG, "event->down bitrate, previous bitrate is " + preBitrate +
-//                    "current bitrate is " + currBitrate);
-        }
-    };
-    private AlivcEventResponse mAudioCaptureSuccRes = new AlivcEventResponse() {
-        @Override
-        public void onEvent(AlivcEvent event) {
-            //成功打开音频
-        }
-    };
-
-    private AlivcEventResponse mVideoEncoderSuccRes = new AlivcEventResponse() {
-        @Override
-        public void onEvent(AlivcEvent event) {
-            //成功打开视频
-
-        }
-    };
-    private AlivcEventResponse mVideoEncoderFailedRes = new AlivcEventResponse() {
-        @Override
-        public void onEvent(AlivcEvent event) {
-            //视频编码失败
-        }
-    };
-    private AlivcEventResponse mVideoEncodeFrameFailedRes = new AlivcEventResponse() {
-        @Override
-        public void onEvent(AlivcEvent event) {
-            //视频帧编码失败
-        }
-    };
-
-
-    private AlivcEventResponse mInitDoneRes = new AlivcEventResponse() {
-        @Override
-        public void onEvent(AlivcEvent event) {
-            //直播录制初始化完成
-        }
-    };
-
-    private AlivcEventResponse mDataDiscardRes = new AlivcEventResponse() {
-        @Override
-        public void onEvent(AlivcEvent event) {
-            Bundle bundle = event.getBundle();
-            int discardFrames = 0;
-            if (bundle != null) {
-                discardFrames = bundle.getInt(AlivcEvent.EventBundleKey.KEY_DISCARD_FRAMES);
-            }
-//            Log.d(TAG, "event->data discard, the frames num is " + discardFrames);
-        }
-    };
-
-    private AlivcEventResponse mAudioCaptureOpenFailedRes = new AlivcEventResponse() {
-        @Override
-        public void onEvent(AlivcEvent event) {
-            //音频捕捉设备打开失败
-        }
-    };
-
-    private AlivcEventResponse mAudioEncodeFrameFailedRes = new AlivcEventResponse() {
-        @Override
-        public void onEvent(AlivcEvent event) {
-            //音频编码失败
         }
     };
 

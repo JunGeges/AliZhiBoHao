@@ -20,6 +20,7 @@ import java.util.ArrayList;
 public class MyApplication extends Application {
     private static final String TAG = "ZHIBOHAO";
     public static IWXAPI api;
+    //微信配置信息
     public static final String APP_ID = "wx19674a62b3628c8f";
     public static final String APPSECRET = "73259c1134e73bdcc73c07400f574890";
     public static final String URL_ACCESS_TOKEN = "https://api.weixin.qq.com/sns/oauth2/access_token?";
