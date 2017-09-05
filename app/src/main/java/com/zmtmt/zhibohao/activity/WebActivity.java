@@ -13,12 +13,11 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.content.FileProvider;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.text.TextUtils;
 import android.util.Log;
 import android.view.Gravity;
 import android.view.KeyEvent;
@@ -45,7 +44,11 @@ import com.zmtmt.zhibohao.app.MyApplication;
 import com.zmtmt.zhibohao.entity.LiveRoomInfo;
 import com.zmtmt.zhibohao.entity.Products;
 import com.zmtmt.zhibohao.entity.ShareInfo;
+import com.zmtmt.zhibohao.entity.VersionBean;
+import com.zmtmt.zhibohao.net.ZBHClient;
+import com.zmtmt.zhibohao.net.ZBHServices;
 import com.zmtmt.zhibohao.tools.CommonUtils;
+import com.zmtmt.zhibohao.tools.Constants;
 import com.zmtmt.zhibohao.tools.HttpUtils;
 import com.zmtmt.zhibohao.tools.ShareUtils;
 import com.zmtmt.zhibohao.widget.CustomPopupWindow;
@@ -54,8 +57,13 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+
+import io.reactivex.android.schedulers.AndroidSchedulers;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 import static android.webkit.WebSettings.LOAD_NO_CACHE;
 
@@ -114,7 +122,6 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
     private Bitmap mBitmap;
     private AlertDialog alertDialog;
     private BroadcastReceiver upgradeReceiver;//版本更新广播
-    private static final String UPGRADE_URL = "http://app.zmtmt.com/down/zhibohao.json";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -468,83 +475,55 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
         super.onDestroy();
     }
 
-    private String strResponse;
-
     //以下针对更新升级
-    private void checkVersion() {
-        new UpdateVersionTask().execute(UPGRADE_URL);
-    }
-
-    int serviceVersionCode = 0;
-
-    class UpdateVersionTask extends AsyncTask<String, Void, String> {
-
-        @Override
-        protected String doInBackground(String... strings) {
-
-            HttpUtils.get(strings[0], new HttpUtils.NetWorkStatus() {
-                @Override
-                public void onSuccessful(String response) {
-                    strResponse = response;
-                }
-
-                @Override
-                public void onFailed(String error) {
-
-                }
-            });
-            return strResponse;
-        }
-
-        @Override
-        protected void onPostExecute(String s) {
-            StringBuilder builder = new StringBuilder();
-            boolean hasVersionCode = false;
-            String url = "";
-            try {
-                if (!TextUtils.isEmpty(s)) {
-                    JSONObject versionInfo = new JSONObject(s);
-                    serviceVersionCode = versionInfo.getInt("versionCode");
-                    //上传的格式是(更新内容-更新内容-更新内容)
-                    String updateContent =versionInfo.getString("desc");
-                    String[] contents = updateContent.split("-");
-                    for (int i = 0; i < contents.length; i++) {
-                        builder.append((i+1)+"."+contents[i]+"\n");
-                    }
-                    url = versionInfo.getString("url");
-                    hasVersionCode = true;
-                }
-            } catch (JSONException ignored) {
-                ignored.printStackTrace();
-            }
-            final String updateUrl = url;
-
-            if (hasVersionCode && BuildConfig.VERSION_CODE < serviceVersionCode) {
-                AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(WebActivity.this);
-                alertDialogBuilder.setCancelable(false);
-                alertDialog = alertDialogBuilder.setTitle(getString(R.string.check_version))
-                        .setMessage(builder.toString())
-                        .setPositiveButton(getString(R.string.button_positive), null)
-//                        .setNegativeButton(getString(R.string.button_cancel), null)
-                        .create();
-                alertDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+    public void checkVersion(){
+        ZBHClient.getInstance()
+                .create(ZBHServices.class, Constants.BASE_UPGRADE_URL)
+                .getVersionInfo()
+                .subscribeOn(Schedulers.io())//在子线程做请求处理
+                .observeOn(AndroidSchedulers.mainThread())//回到主线程做数据处理
+                .subscribe(new Consumer<VersionBean>() {
                     @Override
-                    public void onShow(final DialogInterface dialog) {
-                        Button b = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE);
-                        b.setOnClickListener(new View.OnClickListener() {
+                    public void accept(VersionBean versionBean) throws Exception {
+                        //弹出提示并更新
+                        showUpgradeDialog(versionBean);
+                    }
+                }, new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Exception {
 
-                            @Override
-                            public void onClick(View view) {
-                                WebActivity.this.update(updateUrl);
-//                                alertDialog.dismiss();
-                                CommonUtils.showToast(WebActivity.this,getString(R.string.app_download));
-                            }
-                        });
                     }
                 });
-                alertDialog.show();
-            }
-            super.onPostExecute(s);
+    }
+
+    public void showUpgradeDialog(final VersionBean version){
+        StringBuilder builder = new StringBuilder();//用来拼接版本更新详情的
+        String[] contents = version.getDesc().split("-");
+        for (int i = 0; i < contents.length; i++) {
+            builder.append((i + 1) + "." + contents[i] + "\n");
+        }
+        if (BuildConfig.VERSION_CODE < version.getVersionCode()) {
+            AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(WebActivity.this);
+            alertDialogBuilder.setCancelable(false);
+            alertDialog = alertDialogBuilder.setTitle(getString(R.string.check_version))
+                    .setMessage(builder.toString())
+                    .setPositiveButton(getString(R.string.button_positive), null)
+                    .create();
+            alertDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+                @Override
+                public void onShow(final DialogInterface dialog) {
+                    Button b = alertDialog.getButton(AlertDialog.BUTTON_POSITIVE);
+                    b.setOnClickListener(new View.OnClickListener() {
+
+                        @Override
+                        public void onClick(View view) {
+                            WebActivity.this.update(version.getUrl());
+                            CommonUtils.showToast(WebActivity.this, getString(R.string.app_download));
+                        }
+                    });
+                }
+            });
+            alertDialog.show();
         }
     }
 
@@ -585,13 +564,17 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
             long myDownloadID = intent.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1);
             if (reference == myDownloadID) {
                 Intent install = new Intent(Intent.ACTION_VIEW);
-                Uri downloadFileUri;
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.HONEYCOMB) {
-                    downloadFileUri = dManager.getUriForDownloadedFile(reference);
-                    install.setDataAndType(downloadFileUri, "application/vnd.android.package-archive");
-                    install.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-                    context.startActivity(install);
+                Uri downloadFileUri=null;
+                if (android.os.Build.VERSION.SDK_INT >= 24) {
+                    downloadFileUri = FileProvider.getUriForFile(context, "com.zmtmt.zhibohao.fileProvider", new File(Constants.UPGRADE_URL));
+                    // 给目标应用一个临时授权
+                    intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                }else {
+                    downloadFileUri= dManager.getUriForDownloadedFile(reference);
                 }
+                install.setDataAndType(downloadFileUri, "application/vnd.android.package-archive");
+                install.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                context.startActivity(install);
             }
         }
     }
@@ -612,6 +595,7 @@ public class WebActivity extends AppCompatActivity implements View.OnClickListen
             in.putExtra("isYaoyue", false);
             in.putParcelableArrayListExtra("products_list", pList);
             shareInfo.setLiveId(s);
+            Log.i(TAG, "openCamera: "+lri.toString());
             in.putExtra("shareinfo", shareInfo);
             startActivity(in);
         }

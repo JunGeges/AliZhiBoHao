@@ -2,5 +2,6 @@
 <resources>
     <paths>
         <external-path path="" name="camera_photos" />
+        <external-path path="" name="download"/>
     </paths>
 </resources>

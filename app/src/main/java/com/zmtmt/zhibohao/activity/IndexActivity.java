@@ -104,9 +104,9 @@ public class IndexActivity extends AppCompatActivity implements View.OnClickList
                 if (MyApplication.isInstallWx) {
                     btn_login.setText(R.string.wx_logining);
                     SendAuth.Req req = new SendAuth.Req();
-                    req.scope = "snsapi_userinfo";
-                    req.state = "wechat_sdk_demo_test";
-                    boolean isSucceed = MyApplication.api.sendReq(req);
+                    req.scope = getString(R.string.scope);
+                    req.state = getString(R.string.state);
+                    MyApplication.api.sendReq(req);
                 } else {
                     CommonUtils.showToast(getApplicationContext(), getString(R.string.wx_not_install));
                 }

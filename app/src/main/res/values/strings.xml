@@ -92,5 +92,7 @@
     <string name="button_positive">抢先体验</string>
     <string name="button_cancel">遗憾错过</string>
     <string name="app_download">应用正在下载,请稍等...</string>
+    <string name="scope">snsapi_userinfo</string>
+    <string name="state">wechat_sdk_demo_test</string>
 
 </resources>
